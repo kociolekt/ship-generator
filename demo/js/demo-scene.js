@@ -1,5 +1,21 @@
 /* globals THREE */
 
+/* Creating ship model */
+var config = {
+	className: 'Private Vessel',
+	minLength: 10,
+	maxLength: 24,
+	minWidth: 5,
+	maxWidth: 15,
+	minHeight: 5,
+	maxHeight: 15,
+	minBodyBreakPoints: 1,
+	maxBodyBreakPoints: 3,
+	bodyType: 'fluid'
+};
+
+
+
 
 
 var scene = new THREE.Scene();
