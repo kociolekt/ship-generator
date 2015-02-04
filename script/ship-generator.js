@@ -25,8 +25,7 @@ function ShipGenerator(config) {
 
 	this.settings = this.defaultOptions.extend(config);
 
-	//RaceBasedConfig
-    var line = this[this.settings.bodyType];
+    this.geometry = {};
 
     //ClassBasedConfig
     var modelLength = this.randInt(config.minLength, config.maxLength);
@@ -34,12 +33,12 @@ function ShipGenerator(config) {
 
     //Generating Body Spain
     var bodyPoints = [],
-    	centerOfMass = new THREE.Vector3( 0, 0, 0 );
+    	centerOfMass = {x:0, y:0, z:0};
 
     for (var i = 0; i < bodyBreakPointsNumber + 2; i++) {
     	var bodyPointHeight = this.randInt(config.minHeight, config.maxHeight),
     		bodyPointLength = modelLength / (bodyBreakPointsNumber + 1) * i;
-    	bodyPoints.push(new THREE.Vector3(0, bodyPointHeight, bodyPointLength));
+    	bodyPoints.push({x:0, y:bodyPointHeight, z:bodyPointLength});
     	centerOfMass.y += bodyPointHeight;
     	centerOfMass.z += bodyPointLength;
     };
@@ -47,14 +46,29 @@ function ShipGenerator(config) {
     centerOfMass.y = centerOfMass.y / (bodyBreakPointsNumber + 2);
     centerOfMass.z = centerOfMass.z / (bodyBreakPointsNumber + 2);
 
-    this.translate(bodyPoints, {0, -centerOfMass.y, -centerOfMass.z});
+    bodyPoints = this[this.settings.bodyType](this.translate(bodyPoints, {x:0, y:-centerOfMass.y, z:-centerOfMass.z}));
+
 
     //Meshing
+
+
+
+    this.geometry = {
+        vertices: bodyPoints,
+        faces: []
+    }
 
 }
 
 ShipGenerator.prototype.fluidStyle = function(points) {
-	return points;
+    var result = [],
+        segments = 20;
+
+    for (var i = 0; i <= segments; i++) {
+        result.push(this.bezier(points, i/segments));
+    };
+
+	return result;
 };
 
 ShipGenerator.prototype.linearStyle = function(points) {
@@ -69,9 +83,9 @@ ShipGenerator.prototype.randInt = function(min, max) {
 ShipGenerator.prototype.translate = function(points, v) {
 
 	for (var i = 0, pLen = points.length; i < pLen; i++) {
-		points[i].x + v.x;
-		points[i].y + v.z;
-		points[i].y + v.z;
+		points[i].x += v.x;
+		points[i].y += v.y;
+		points[i].z += v.z;
 	};
 
 	return points;
