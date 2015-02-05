@@ -1,17 +1,9 @@
 /* globals THREE */
 
 /* Creating ship model */
+
 var config = {
-    className: 'Private Vessel',
-    minLength: 10,
-    maxLength: 24,
-    minWidth: 5,
-    maxWidth: 15,
-    minHeight: 5,
-    maxHeight: 15,
-    minBodyBreakPoints: 1,
-    maxBodyBreakPoints: 3,
-    bodyType: 'fluidStyle' // fluidStyle|linearStyle
+
 };
 
 var generator = new ShipGenerator(config);
@@ -40,7 +32,7 @@ for (var i = 0, vLen = generator.geometry.vertices.length; i < vLen; i++) {
 var shipMaterial = new THREE.LineBasicMaterial({
     color: 0xd0d0d0
 });
-var ship = new THREE.Line( shipGeometry, shipMaterial );
+var ship = new THREE.Line( shipGeometry, shipMaterial, THREE.LinePieces );
 scene.add( ship );
 
 //Add Grid

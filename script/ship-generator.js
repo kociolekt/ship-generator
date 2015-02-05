@@ -20,49 +20,115 @@ function ShipGenerator(config) {
 		maxHeight: 15,
 		minBodyBreakPoints: 1,
 		maxBodyBreakPoints: 3,
-		bodyType: 'fluidStyle' // fluidStyle|linearStyle
+        minWingsNumber: 0,
+        maxWingsNumber: 4,
+		bodyType: 'fluidStyle', // fluidStyle|linearStyle
+        symmetrical: true,
+        noseCut: false,
+        tailCut: true
 	};
 
 	this.settings = this.defaultOptions.extend(config);
 
-    this.geometry = {};
-
-    //ClassBasedConfig
-    var modelLength = this.randInt(config.minLength, config.maxLength);
-    var bodyBreakPointsNumber = this.randInt(config.minBodyBreakPoints, config.maxBodyBreakPoints);
-
-    //Generating Body Spain
-    var bodyPoints = [],
-    	centerOfMass = {x:0, y:0, z:0};
-
-    for (var i = 0; i < bodyBreakPointsNumber + 2; i++) {
-    	var bodyPointHeight = this.randInt(config.minHeight, config.maxHeight),
-    		bodyPointLength = modelLength / (bodyBreakPointsNumber + 1) * i;
-    	bodyPoints.push({x:0, y:bodyPointHeight, z:bodyPointLength});
-    	centerOfMass.y += bodyPointHeight;
-    	centerOfMass.z += bodyPointLength;
-    };
-
-    centerOfMass.y = centerOfMass.y / (bodyBreakPointsNumber + 2);
-    centerOfMass.z = centerOfMass.z / (bodyBreakPointsNumber + 2);
-
-    bodyPoints = this[this.settings.bodyType](this.translate(bodyPoints, {x:0, y:-centerOfMass.y, z:-centerOfMass.z}));
-
-
-    //Meshing
-
-
-
     this.geometry = {
-        vertices: bodyPoints,
+        vertices: [],
         faces: []
     }
+
+    //ClassBasedConfig
+    var bodyBreakPointsNumber = this.randInt(this.settings.minBodyBreakPoints, this.settings.maxBodyBreakPoints);
+
+    //Generating Body Spain
+    var topLine = [],
+        bottomLine = [],
+        leftLine = [],
+        rightLine = [],
+    	centerOfMass = {x:0, y:0, z:0},
+        pointIndex = 0,
+        maxPoints = bodyBreakPointsNumber + 2;
+
+    this.shipHeight = this.randInt(this.settings.minHeight, this.settings.maxHeight);
+    this.shipWidth = this.randInt(this.settings.minWidth, this.settings.maxWidth);
+    this.shipLength = this.randInt(this.settings.minLength, this.settings.maxLength);
+
+    if (!this.settings.tailCut) {
+        topLine.push({x:0, y:0, z:-(this.shipLength / 2)});
+        bottomLine.push({x:0, y:0, z:-(this.shipLength / 2)});
+        rightLine.push({x:0, y:0, z:-(this.shipLength / 2)});
+        leftLine.push({x:0, y:0, z:-(this.shipLength / 2)});
+        pointIndex += 1;
+    }
+
+    if (!this.settings.noseCut) {
+        maxPoints -= 1;
+    }
+
+    for (var i = pointIndex; i < maxPoints; i++) {
+        var bodyPointTop = this.randInt(1, this.shipHeight/2),
+            bodyPointBottom = -this.randInt(1, this.shipHeight/2),
+            bodyPointRight = this.randInt(1, this.shipWidth/2),
+            bodyPointLeft = this.settings.symmetrical ? bodyPointRight * -1 : -this.randInt(1, this.shipWidth/2),
+            bodyPointLength = (this.shipLength / (bodyBreakPointsNumber + 1) * i) - (this.shipLength / 2),
+            bodyPointHeightCenter = bodyPointTop + bodyPointBottom / 2;
+
+        topLine.push({x:0, y:bodyPointTop, z:bodyPointLength});
+        bottomLine.push({x:0, y:bodyPointBottom, z:bodyPointLength});
+        rightLine.push({x:bodyPointRight, y:bodyPointHeightCenter, z:bodyPointLength});
+        leftLine.push({x:bodyPointLeft, y:bodyPointHeightCenter, z:bodyPointLength});
+    };
+
+    if (!this.settings.noseCut) {
+        topLine.push({x:0, y:0, z:(this.shipLength / 2)});
+        bottomLine.push({x:0, y:0, z:(this.shipLength / 2)});
+        rightLine.push({x:0, y:0, z:(this.shipLength / 2)});
+        leftLine.push({x:0, y:0, z:(this.shipLength / 2)});
+    }
+
+    topLine = this[this.settings.bodyType](topLine);
+    bottomLine = this[this.settings.bodyType](bottomLine);
+    rightLine = this[this.settings.bodyType](rightLine);
+    leftLine = this[this.settings.bodyType](leftLine);
+
+    //Meshing
+    this.wingsNumber = this.randInt(this.settings.minWingsNumber, this.settings.maxWingsNumber);
+
+    switch(this.settings.bodyType){
+        case 'fluidStyle':
+            for (var i = 0, wLen = this.wingsNumber * 2; i <= wLen; i++) {
+                var
+
+            };
+        break;
+        case 'linearStyle':
+
+        break;
+    }
+
+    for (var i = 1, pLen = topLine.length; i < pLen; i++) {
+        this.geometry.vertices.push(topLine[i-1]);
+        this.geometry.vertices.push(topLine[i]);
+    };
+
+    for (var i = 1, pLen = bottomLine.length; i < pLen; i++) {
+        this.geometry.vertices.push(bottomLine[i-1]);
+        this.geometry.vertices.push(bottomLine[i]);
+    };
+
+    for (var i = 1, pLen = rightLine.length; i < pLen; i++) {
+        this.geometry.vertices.push(rightLine[i-1]);
+        this.geometry.vertices.push(rightLine[i]);
+    };
+
+    for (var i = 1, pLen = leftLine.length; i < pLen; i++) {
+        this.geometry.vertices.push(leftLine[i-1]);
+        this.geometry.vertices.push(leftLine[i]);
+    };
 
 }
 
 ShipGenerator.prototype.fluidStyle = function(points) {
     var result = [],
-        segments = 20;
+        segments = points.length * 1.5;
 
     for (var i = 0; i <= segments; i++) {
         result.push(this.bezier(points, i/segments));
