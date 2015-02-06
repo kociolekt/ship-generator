@@ -57,32 +57,6 @@ function ShipGenerator(config) {
 
 	this.settings = this.defaultOptions.extend(config);
 
-    /*
-        One wing
-         1   2   3   4   5   6   7   8
-         |    /                     \
-                  -             -
-                      \  |  /
-
-        Two wings
-         1   2   3   4
-         |          \ /
-            - -
-         |      / \
-
-        Three wings
-         1   2
-         |  \ /
-
-        / \  |
-
-        Four wings
-         1   2
-         |  \ /
-        - -
-         |  / \
-    */
-
     this.geometry = {
         vertices: [],
         faces: []
@@ -122,7 +96,7 @@ function ShipGenerator(config) {
             bodyPointRight = this.randInt(1, this.shipWidth/2),
             bodyPointLeft = this.settings.symmetrical ? bodyPointRight * -1 : -this.randInt(1, this.shipWidth/2),
             bodyPointLength = (this.shipLength / (bodyBreakPointsNumber + 1) * i) - (this.shipLength / 2),
-            bodyPointHeightCenter = bodyPointTop + bodyPointBottom / 2;
+            bodyPointHeightCenter = (bodyPointTop + bodyPointBottom) / 2;
 
         topLine.push({x:0, y:bodyPointTop, z:bodyPointLength});
         bottomLine.push({x:0, y:bodyPointBottom, z:bodyPointLength});
