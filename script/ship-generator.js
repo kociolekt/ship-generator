@@ -25,10 +25,63 @@ function ShipGenerator(config) {
 		bodyType: 'fluidStyle', // fluidStyle|linearStyle
         symmetrical: true,
         noseCut: false,
-        tailCut: true
+        tailCut: true,
+        wingTypes: [
+            [],
+            [                       //        One wing
+                [0],                //         1   2   3   4   5   6   7   8
+                [45],               //         |    /                     \
+                [90],               //                  -             -
+                [135],              //                      \  |  /
+                [180],
+                [225],              //        Two wings
+                [270],              //         1   2   3   4
+                [315]               //         |          \ /
+            ],                      //            - -
+            [                       //         |      / \
+                [0, 180],
+                [90, 270],          //        Three wings
+                [135, 225],         //         1   2
+                [45, 315]           //         |  \ /
+            ],                      //
+            [                       //        / \  |
+                [0, 135, 225],
+                [45, 180, 315],     //        Four wings
+            ],                      //         1   2
+            [                       //         |  \ /
+                [0, 90, 180, 270],  //        - -
+                [45, 135, 225, 315] //         |  / \
+            ]
+        ]
 	};
 
 	this.settings = this.defaultOptions.extend(config);
+
+    /*
+        One wing
+         1   2   3   4   5   6   7   8
+         |    /                     \
+                  -             -
+                      \  |  /
+
+        Two wings
+         1   2   3   4
+         |          \ /
+            - -
+         |      / \
+
+        Three wings
+         1   2
+         |  \ /
+
+        / \  |
+
+        Four wings
+         1   2
+         |  \ /
+        - -
+         |  / \
+    */
 
     this.geometry = {
         vertices: [],
@@ -44,7 +97,7 @@ function ShipGenerator(config) {
         leftLine = [],
         rightLine = [],
     	centerOfMass = {x:0, y:0, z:0},
-        pointIndex = 0,
+        startIndex = 0,
         maxPoints = bodyBreakPointsNumber + 2;
 
     this.shipHeight = this.randInt(this.settings.minHeight, this.settings.maxHeight);
@@ -56,14 +109,14 @@ function ShipGenerator(config) {
         bottomLine.push({x:0, y:0, z:-(this.shipLength / 2)});
         rightLine.push({x:0, y:0, z:-(this.shipLength / 2)});
         leftLine.push({x:0, y:0, z:-(this.shipLength / 2)});
-        pointIndex += 1;
+        startIndex += 1;
     }
 
     if (!this.settings.noseCut) {
         maxPoints -= 1;
     }
 
-    for (var i = pointIndex; i < maxPoints; i++) {
+    for (var i = startIndex; i < maxPoints; i++) {
         var bodyPointTop = this.randInt(1, this.shipHeight/2),
             bodyPointBottom = -this.randInt(1, this.shipHeight/2),
             bodyPointRight = this.randInt(1, this.shipWidth/2),
@@ -92,17 +145,24 @@ function ShipGenerator(config) {
     //Meshing
     this.wingsNumber = this.randInt(this.settings.minWingsNumber, this.settings.maxWingsNumber);
 
-    switch(this.settings.bodyType){
-        case 'fluidStyle':
-            for (var i = 0, wLen = this.wingsNumber * 2; i <= wLen; i++) {
-                var
-
-            };
-        break;
-        case 'linearStyle':
-
-        break;
+    if(this.wingsNumber > 0) {
+        this.wingsType = this.settings.wingTypes[this.wingsNumber][this.randInt(0, this.settings.wingTypes[this.wingsNumber].length - 1)];
     }
+
+
+/*
+    for (var i = 0, sLen = topLine.length; i < sLen; i++) {
+
+
+
+        for (var j = 1, pLen = topLine.length; j < pLen; j++) {
+            this.geometry.vertices.push(topLine[i-1]);
+            this.geometry.vertices.push(topLine[i]);
+        };
+
+    };*/
+
+
 
     for (var i = 1, pLen = topLine.length; i < pLen; i++) {
         this.geometry.vertices.push(topLine[i-1]);
@@ -123,12 +183,11 @@ function ShipGenerator(config) {
         this.geometry.vertices.push(leftLine[i-1]);
         this.geometry.vertices.push(leftLine[i]);
     };
-
 }
 
 ShipGenerator.prototype.fluidStyle = function(points) {
     var result = [],
-        segments = points.length * 1.5;
+        segments = Math.round(points.length * 1.5);
 
     for (var i = 0; i <= segments; i++) {
         result.push(this.bezier(points, i/segments));
