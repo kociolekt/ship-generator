@@ -34,12 +34,12 @@ function ShipGenerator(config) {
             [],
             [                       //        One wing
                 [0],                //         1   2   3   4   5   6   7   8
-                [45],               //         |    /                     \
+                //[45],  ugly       //         |    /                     \
                 [90],               //                  -             -
                 [135],              //                      \  |  /
-                [180],
+                //[180], ugly
                 [225],              //        Two wings
-                [270],              //         1   2   3   4
+                //[270], ugly       //         1   2   3   4
                 [315]               //         |          \ /
             ],                      //            - -
             [                       //         |      / \
@@ -58,9 +58,13 @@ function ShipGenerator(config) {
             ]
         ],
         wingPlacing: 'shape', //'front'|'middle'|'back'|'any'|shape
-        wingShape: 'linear', //'linear'|'concave'|'convex'|'random'
-        minWingLength: 2,
-        maxWingLength: 7
+        wingShape: 6, // convex 1 - 6 concave
+        minWingLength: 5,
+        maxWingLength: 10,
+        traverseSegments: 2,
+        squareHullFactor: 0.5,
+        minEnginesNumber: 1,
+        maxEnginesNumber: 6
 	};
 
 	this.settings = this.defaultOptions.extend(config);
@@ -146,9 +150,14 @@ function ShipGenerator(config) {
         }
     }
 
-    //Wings
+    //Hull generation
+    topLine = this[this.settings.bodyType](topLine);
+    bottomLine = this[this.settings.bodyType](bottomLine);
+    rightLine = this[this.settings.bodyType](rightLine);
+    leftLine = this[this.settings.bodyType](leftLine);
 
-    var traverseLines = [];
+    var traverseLines = [],
+        engineTemplate = [];
 
     for (var i = 0, sLen = topLine.length; i < sLen; i++) {
         traverseLines[i] = this.finiteDifferenceSpline([
@@ -157,9 +166,26 @@ function ShipGenerator(config) {
             topLine[i],
             rightLine[i],
             bottomLine[i]
-        ], 2);
+        ], this.settings.traverseSegments);
+
+        if (i === 0) {
+            engineTemplate = this.finiteDifferenceSpline([
+                bottomLine[i],
+                leftLine[i],
+                topLine[i],
+                rightLine[i],
+                bottomLine[i]
+            ], this.settings.traverseSegments);
+
+            engineTemplate[engineTemplate.length - 1] = engineTemplate[0]; //connecting start with end
+        }
+
+        traverseLines[i][traverseLines[i].length - 1] = traverseLines[i][0]; //connecting start with end
     };
 
+
+
+    //Wings
     this.wingsNumber = this.randInt(this.settings.minWingsNumber, this.settings.maxWingsNumber);
 
     if(this.wingsNumber > 0) {
@@ -179,64 +205,104 @@ function ShipGenerator(config) {
                 this.wingsPlace = 0;
             break;
             case 'shape':
-
-                var distance = 
+                var currentDistance = 0,
+                    maxDistance = 0,
+                    traverseLine = {},
+                    centerPoint = {x:0, y:0, z:0},
+                    hullPoint = {x:0, y:0, z:0};
 
                 this.wingsPlace = 0;
+
+                for (var i = 0, tLen = traverseLines.length; i < tLen; i++) {
+                    traverseLine = traverseLines[i];
+                    for (var j = 0, lLen = traverseLine.length; j < lLen; j++) {
+                        hullPoint.x = traverseLine[j].x;
+                        hullPoint.y = traverseLine[j].y;
+                        currentDistance = this.distance(centerPoint, hullPoint);
+                        if(maxDistance < currentDistance){
+                            maxDistance = currentDistance;
+                            this.wingsPlace = i;
+                        }
+                    };
+                };
             break;
             case 'random':
                 this.wingsPlace = this.randInt(0, (topLine.length - 1));
             break;
         }
 
+        var convexFactor = this.settings.wingShape;
+
+        for (var i = 0, tLen = this.wingsType.length; i < tLen; i++) {
+
+            for (var j = 0, lLen = traverseLines.length; j < lLen; j++) {
+                var wingFactor = Math.pow((lLen - 1 - Math.abs(j - this.wingsPlace)) / (lLen - 1), convexFactor),
+                    wingPointIndex = this.degreeToTraverseIndex(this.wingsType[i]),
+                    wingPoint = traverseLines[j][wingPointIndex],
+                    distance = this.distance({x:0, y:0, z:0}, {x:wingPoint.x, y:wingPoint.y, z:0});
+
+                if (distance !== 0) {
+                    wingPoint.x = wingPoint.x + (wingPoint.x / distance * this.wingsLength * wingFactor);
+                    wingPoint.y = wingPoint.y + (wingPoint.y / distance * this.wingsLength * wingFactor);
+                }
+
+                console.log([wingPoint.x, wingPoint.y]);
+            };
+        };
+
         console.log(['wings: ', this.wingsNumber, this.wingsType, this.wingsPlace, this.wingsLength]);
     } else {
         console.log(['no wings']);
     }
 
+    //Generate engine
+    //arr.splice(index, 0, "Lene"); inserting point on current index
+    var zAvg = 0,
+        ratio = 0.7;
+
+    this.enginesNumber = this.randInt(this.settings.minEnginesNumber, this.settings.maxEnginesNumber);
+
+    for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
+        zAvg += engineTemplate[i].z;
+    };
+
+    zAvg = zAvg / engineTemplate.length;
+
+    for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
+        engineTemplate[i].x = engineTemplate[i].x * ratio;
+        engineTemplate[i].y = engineTemplate[i].y * ratio;
+        engineTemplate[i].z = ((engineTemplate[i].z - zAvg) * ratio) + zAvg;
+    };
+
+    if (this.enginesNumber === 1) {
+
+    } else {
+        var square = [
+
+        ];
+    }
+
+
     //Meshing
-    topLine = this[this.settings.bodyType](topLine);
-    bottomLine = this[this.settings.bodyType](bottomLine);
-    rightLine = this[this.settings.bodyType](rightLine);
-    leftLine = this[this.settings.bodyType](leftLine);
-
-
-    for (var i = 0, sLen = topLine.length; i < sLen; i++) {
-
-        var traverseLine = this.finiteDifferenceSpline([
-                topLine[i],
-                rightLine[i],
-                bottomLine[i],
-                leftLine[i],
-                topLine[i]
-            ], 2);
-
-        console.log(traverseLine);
+    for (var i = 0, tLen = traverseLines.length; i < tLen; i++) {
+        traverseLine = traverseLines[i];
 
         for (var j = 1, pLen = traverseLine.length; j < pLen; j++) {
             this.geometry.vertices.push(traverseLine[j-1]);
             this.geometry.vertices.push(traverseLine[j]);
         };
+
+        if (i > 0) {
+            for (var j = 0, pLen = traverseLine.length; j < pLen; j++) {
+                this.geometry.vertices.push(traverseLines[i-1][j]);
+                this.geometry.vertices.push(traverseLine[j]);
+            };
+        }
     };
 
-    for (var i = 1, pLen = topLine.length; i < pLen; i++) {
-        this.geometry.vertices.push(topLine[i-1]);
-        this.geometry.vertices.push(topLine[i]);
-    };
-
-    for (var i = 1, pLen = bottomLine.length; i < pLen; i++) {
-        this.geometry.vertices.push(bottomLine[i-1]);
-        this.geometry.vertices.push(bottomLine[i]);
-    };
-
-    for (var i = 1, pLen = rightLine.length; i < pLen; i++) {
-        this.geometry.vertices.push(rightLine[i-1]);
-        this.geometry.vertices.push(rightLine[i]);
-    };
-
-    for (var i = 1, pLen = leftLine.length; i < pLen; i++) {
-        this.geometry.vertices.push(leftLine[i-1]);
-        this.geometry.vertices.push(leftLine[i]);
+    for (var j = 1, pLen = engineTemplate.length; j < pLen; j++) {
+        this.geometry.vertices.push(engineTemplate[j-1]);
+        this.geometry.vertices.push(engineTemplate[j]);
     };
 }
 
@@ -315,6 +381,7 @@ ShipGenerator.prototype.finiteDifferenceSpline = function(points, segments) {
         p1 = { x: 0, y: 0, z: 0},
         m0 = { x: 0, y: 0, z: 0},
         m1 = { x: 0, y: 0, z: 0},
+        sf = this.settings.squareHullFactor,
         pLen = points.length,
         results = [];
 
@@ -334,18 +401,18 @@ ShipGenerator.prototype.finiteDifferenceSpline = function(points, segments) {
         p0 = points[j];
         p1 = points[j + 1];
         if (j > 0) {
-            m0.x = 0.5 * (points[j + 1].x - points[j - 1].x);
-            m0.y = 0.5 * (points[j + 1].y - points[j - 1].y);
-            m0.z = 0.5 * (points[j + 1].z - points[j - 1].z);
+            m0.x = sf * (points[j + 1].x - points[j - 1].x);
+            m0.y = sf * (points[j + 1].y - points[j - 1].y);
+            m0.z = sf * (points[j + 1].z - points[j - 1].z);
         } else {
             m0.x = points[j + 1].x - points[j].x;
             m0.y = points[j + 1].y - points[j].y;
             m0.z = points[j + 1].z - points[j].z;
         }
         if (j < pLen - 2) {
-            m1.x = 0.5 * (points[j + 2].x - points[j].x);
-            m1.y = 0.5 * (points[j + 2].y - points[j].y);
-            m1.z = 0.5 * (points[j + 2].z - points[j].z);
+            m1.x = sf * (points[j + 2].x - points[j].x);
+            m1.y = sf * (points[j + 2].y - points[j].y);
+            m1.z = sf * (points[j + 2].z - points[j].z);
         } else {
             m1.x = points[j + 1].x - points[j].x;
             m1.y = points[j + 1].y - points[j].y;
@@ -360,8 +427,8 @@ ShipGenerator.prototype.finiteDifferenceSpline = function(points, segments) {
             wm0 = 0,
             wp1 = 0,
             wm1 = 0;
-        
-        for (var i = 0; i < numberOfPoints; i++) {
+
+        for (var i = j === 0 ? 0 : 1; i < numberOfPoints; i++) {
             t = i / (numberOfPoints - 1);
             t3 = t*t*t;
             t2 = t*t;
@@ -386,30 +453,7 @@ ShipGenerator.prototype.linear = function(points) {
 };
 
 ShipGenerator.prototype.degreeToTraverseIndex = function(degree) {
-    switch(degree) {
-        case 0:
-            return 4;
-        break;
-        case 45:
-            return 5;
-        break;
-        case 90:
-            return 6;
-        break;
-        case 135:
-            return 7;
-        break;
-        case 180:
-            return 0;
-        break;
-        case 225:
-            return 1;
-        break;
-        case 270:
-            return 2;
-        break;
-        case 315:
-            return 3;
-        break;
-    }
+
+    return Math.floor(((this.settings.traverseSegments * 4) + 1) * (degree / 360));
+
 };
