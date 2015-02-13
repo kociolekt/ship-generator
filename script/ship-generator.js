@@ -184,7 +184,6 @@ function ShipGenerator(config) {
     };
 
 
-
     //Wings
     this.wingsNumber = this.randInt(this.settings.minWingsNumber, this.settings.maxWingsNumber);
 
@@ -256,31 +255,44 @@ function ShipGenerator(config) {
     }
 
     //Generate engine
-    //arr.splice(index, 0, "Lene"); inserting point on current index
-    var zAvg = 0,
-        ratio = 0.7;
+    var engineAvgZ = 0
+        engineMaxZ = 0,
+        engineRatio = 0.7,
+        mufflerRatio = 0.9;
 
     this.enginesNumber = this.randInt(this.settings.minEnginesNumber, this.settings.maxEnginesNumber);
 
     for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
-        zAvg += engineTemplate[i].z;
+        engineAvgZ += engineTemplate[i].z;
+        if (Math.abs(engineMaxZ) < Math.abs(engineTemplate[i].z)) {
+            engineMaxZ = engineTemplate[i].z;
+        }
     };
 
-    zAvg = zAvg / engineTemplate.length;
+    engineAvgZ = engineAvgZ / engineTemplate.length;
 
     for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
-        engineTemplate[i].x = engineTemplate[i].x * ratio;
-        engineTemplate[i].y = engineTemplate[i].y * ratio;
-        engineTemplate[i].z = ((engineTemplate[i].z - zAvg) * ratio) + zAvg;
+        engineTemplate[i].x = engineTemplate[i].x * engineRatio;
+        engineTemplate[i].y = engineTemplate[i].y * engineRatio;
+        engineTemplate[i].z = ((engineTemplate[i].z - engineAvgZ) * engineRatio) + engineAvgZ;
     };
 
-    if (this.enginesNumber === 1) {
+    //TODO: Here is only one engine for now. Make more engines
+    traverseLines.splice(0, 0, []);
+    traverseLines.splice(0, 0, []);
 
-    } else {
-        var square = [
-
-        ];
-    }
+    for (var i = 0; i < engineTemplate.length; i++) {
+        traverseLines[1][i] = {
+            x: engineTemplate[i].x,
+            y: engineTemplate[i].y,
+            z: engineTemplate[i].z
+        }
+        traverseLines[0][i] = {
+            x: engineTemplate[i].x * mufflerRatio,
+            y: engineTemplate[i].y * mufflerRatio,
+            z: engineMaxZ
+        }
+    };
 
 
     //Meshing
