@@ -22,7 +22,7 @@ function ShipGenerator(config) {
 		maxBodyBreakPoints: 3,
         minWingsNumber: 0,
         maxWingsNumber: 4,
-		bodyType: 'fluidStyle', // fluidStyle|linearStyle
+		bodyType: 'linearStyle', // fluidStyle|linearStyle
         symmetrical: true,
         noseCut: false,
         tailCut: true,
@@ -127,7 +127,8 @@ function ShipGenerator(config) {
     } else {
         var tilt = this.randInt(this.settings.minCutTailTilt, this.settings.maxCutTailTilt),
             pLen = topLine.length,
-            sFactor = pLen - 1;
+            sFactor = pLen - 1,
+            lastIndex = pLen - 1;
 
         for (var i = 0; i < pLen; i++) {
             var tiltStrength = i / sFactor;
@@ -135,6 +136,15 @@ function ShipGenerator(config) {
             topLine[i].z = topLine[i].z + (tilt * tiltStrength);
             bottomLine[i].z = bottomLine[i].z - (tilt * tiltStrength);
         }
+
+        var avgX = (topLine[lastIndex].x + bottomLine[lastIndex].x + rightLine[lastIndex].x + leftLine[lastIndex].x) / 4;
+        var avgY = (topLine[lastIndex].y + bottomLine[lastIndex].y + rightLine[lastIndex].y + leftLine[lastIndex].y) / 4;
+        var avgZ = (topLine[lastIndex].z + bottomLine[lastIndex].z + rightLine[lastIndex].z + leftLine[lastIndex].z) / 4;
+
+        topLine.push({x:avgX, y:avgY, z:avgZ});
+        bottomLine.push({x:avgX, y:avgY, z:avgZ});
+        rightLine.push({x:avgX, y:avgY, z:avgZ});
+        leftLine.push({x:avgX, y:avgY, z:avgZ});
     }
 
     if (this.settings.tailCut) {
@@ -148,6 +158,94 @@ function ShipGenerator(config) {
             topLine[i].z = topLine[i].z + (tilt * tiltStrength);
             bottomLine[i].z = bottomLine[i].z - (tilt * tiltStrength);
         }
+    }
+
+    //Generate engine
+    if (!this.settings.tailCut) { //Many hull engines or none
+        //TODO: implement hull engines
+
+    } else { //Many or one tail engine
+        var engineAvgX = 0,
+            engineAvgY = 0,
+            engineAvgZ = 0,
+            engineMaxZ = 0,
+            engineRadius = 999999999,
+            engineRatio = 0.7,
+            mufflerRatio = 0.9,
+            engineTemplate = [
+                bottomLine[0],
+                leftLine[0],
+                topLine[0],
+                rightLine[0]
+            ];
+
+        this.enginesNumber = this.randInt(this.settings.minEnginesNumber, this.settings.maxEnginesNumber);
+
+        for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
+            engineAvgX += engineTemplate[i].x;
+            engineAvgY += engineTemplate[i].y;
+            engineAvgZ += engineTemplate[i].z;
+            if (Math.abs(engineMaxZ) < Math.abs(engineTemplate[i].z)) {
+                engineMaxZ = engineTemplate[i].z;
+            }
+            var tmpRadius = Math.abs(engineTemplate[i].x);
+            if (engineRadius > tmpRadius) {
+                engineRadius = tmpRadius;
+            }
+            tmpRadius = Math.abs(engineTemplate[i].y);
+            if (engineRadius > tmpRadius) {
+                engineRadius = tmpRadius;
+            }
+        };
+
+        engineAvgZ = engineAvgZ / engineTemplate.length;
+
+        for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
+            engineTemplate[i].x = engineTemplate[i].x * engineRatio;
+            engineTemplate[i].y = engineTemplate[i].y * engineRatio;
+            engineTemplate[i].z = ((engineTemplate[i].z - engineAvgZ) * engineRatio) + engineAvgZ;
+        };
+
+        //TODO: Here is only one engine for now. Make more engines
+        bottomLine.splice(0, 0, []);
+        bottomLine.splice(0, 0, []);
+        leftLine.splice(0, 0, []);
+        leftLine.splice(0, 0, []);
+        topLine.splice(0, 0, []);
+        topLine.splice(0, 0, []);
+        rightLine.splice(0, 0, []);
+        rightLine.splice(0, 0, []);
+
+        for (var i = 0; i < engineTemplate.length; i++) {
+
+            var currentArray = bottomLine;
+
+            switch(i) {
+                case 0:
+                    currentArray = bottomLine;
+                    break;
+                case 1:
+                    currentArray = leftLine;
+                    break;
+                case 2:
+                    currentArray = topLine;
+                    break;
+                case 3:
+                    currentArray = rightLine;
+                    break;
+            }
+
+            currentArray[1] = {
+                x: engineTemplate[i].x,
+                y: engineTemplate[i].y,
+                z: engineTemplate[i].z
+            }
+            currentArray[0] = {
+                x: engineTemplate[i].x * mufflerRatio,
+                y: engineTemplate[i].y * mufflerRatio,
+                z: engineMaxZ
+            }
+        };
     }
 
     //Hull generation
@@ -187,7 +285,7 @@ function ShipGenerator(config) {
     //Wings
     this.wingsNumber = this.randInt(this.settings.minWingsNumber, this.settings.maxWingsNumber);
 
-    if(this.wingsNumber > 0) {
+    if((!this.settings.symmetrical && this.wingsNumber > 0) || (this.settings.symmetrical && this.wingsNumber > 1)) {
         this.wingsType = this.settings.wingTypes[this.wingsNumber][this.randInt(0, this.settings.wingTypes[this.wingsNumber].length - 1)];
         this.wingsPlace = 0; //back is default
         this.wingsLength = this.randInt(this.settings.minWingLength, this.settings.maxWingLength);
@@ -254,6 +352,7 @@ function ShipGenerator(config) {
         console.log(['no wings']);
     }
 
+/*
     //Generate engine
     var engineAvgZ = 0
         engineMaxZ = 0,
@@ -293,11 +392,12 @@ function ShipGenerator(config) {
             z: engineMaxZ
         }
     };
-
+*/
 
     //Meshing
+    /*
     for (var i = 0, tLen = traverseLines.length; i < tLen; i++) {
-        traverseLine = traverseLines[i];
+        var traverseLine = traverseLines[i];
 
         for (var j = 1, pLen = traverseLine.length; j < pLen; j++) {
             this.geometry.vertices.push(traverseLine[j-1]);
@@ -310,12 +410,58 @@ function ShipGenerator(config) {
                 this.geometry.vertices.push(traverseLine[j]);
             };
         }
+    };*/
+
+    var vertices = 0,
+        lines = 0,
+        triangles = 0,
+        planes = 0;
+
+    for (var i = 1, tLen = traverseLines.length; i < tLen; i++) {
+
+        var traverseLine = traverseLines[i];
+
+        for (var j = 1, pLen = traverseLine.length; j < pLen; j++) {
+            var p1 = traverseLines[i-1][j-1],
+                p2 = traverseLines[i][j-1],
+                p3 = traverseLines[i][j],
+                p4 = traverseLines[i-1][j];
+
+            if(j > pLen / 2) {
+                this.geometry.vertices.push(p1);
+                this.geometry.vertices.push(p2);
+                this.geometry.vertices.push(p2);
+                this.geometry.vertices.push(p3);
+                this.geometry.vertices.push(p3);
+                this.geometry.vertices.push(p1);
+                this.geometry.vertices.push(p1);
+                this.geometry.vertices.push(p4);
+                this.geometry.vertices.push(p4);
+                this.geometry.vertices.push(p3);
+                this.geometry.vertices.push(p3);
+                this.geometry.vertices.push(p1);
+            } else {
+                this.geometry.vertices.push(p2);
+                this.geometry.vertices.push(p1);
+                this.geometry.vertices.push(p1);
+                this.geometry.vertices.push(p4);
+                this.geometry.vertices.push(p4);
+                this.geometry.vertices.push(p2);
+                this.geometry.vertices.push(p2);
+                this.geometry.vertices.push(p3);
+                this.geometry.vertices.push(p3);
+                this.geometry.vertices.push(p4);
+                this.geometry.vertices.push(p4);
+                this.geometry.vertices.push(p2);
+            }
+        };
     };
 
+/*
     for (var j = 1, pLen = engineTemplate.length; j < pLen; j++) {
         this.geometry.vertices.push(engineTemplate[j-1]);
         this.geometry.vertices.push(engineTemplate[j]);
-    };
+    };*/
 }
 
 ShipGenerator.prototype.fluidStyle = function(points) {
