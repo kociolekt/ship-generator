@@ -69,73 +69,73 @@ function ShipGenerator(config) {
             {
                 name: 'Eridium',
                 description: 'Amethyst coloured Eridium is appropriately named after the ancient precursor race that utilized it, the Eridians.',
-                colour: 0x8456CC,
+                color: 0x8456CC,
                 texture: 'marble'
             },
             {
                 name: 'Iridium',
                 description: 'A very hard, brittle, silvery-white transition metal of the platinum family.',
-                colour: 0xe8e8e8,
+                color: 0xe8e8e8,
                 texture: 'metal-plate'
             },
             {
                 name: 'Vibranium',
                 description: 'Tiara coloured metal. It is most commonly known as one of the materials used to construct Captain America\'s shield.',
-                colour: 0xc2ccce,
+                color: 0xc2ccce,
                 texture: 'metal-plate'
             },
             {
                 name: 'Naquadah',
                 description: 'Tundora coloured metal. Both the Ancients (who built the network of Stargates) and the Goa\'uld (who exploit the network) used naquadah in the creation of their advanced technology.',
-                colour: 0x494949,
+                color: 0x494949,
                 texture: 'metal-plate'
             },
             {
                 name: 'Scrith',
                 description: 'Scrith is milky-gray translucent in color, and is a nearly frictionless material.',
-                colour: 0xd8dace,
+                color: 0xd8dace,
                 texture: 'solid'
             },
             {
                 name: 'Adamantium',
                 description: 'Adamantium is a group of man-made silver steel metal alloys of varying durability, but all are nearly indestructible.',
-                colour: 0xf0f0f0,
+                color: 0xf0f0f0,
                 texture: 'metal-plate'
             },
             {
                 name: 'Dalekanium',
                 description: 'Dalekanium was first used by Davros to create the Dalek casing, chosen as it was immune to bullets and most laser weapons.',
-                colour: 0xA57530,
+                color: 0xA57530,
                 texture: 'metal-plate'
             },
             {
                 name: 'Durasteel',
                 description: 'Durasteel was an incredibly strong and versatile metal alloy, created from carvanium, lommite, carbon, meleenium, neutronium, and zersium. It was capable of withstanding blistering heat, frigid cold, and monumental physical stress, even when very thin.',
-                colour: 0x8b8a89,
+                color: 0x8b8a89,
                 texture: 'metal-plate'
             },
             {
                 name: 'Beskar',
                 description: 'Beskar is a uniquely resistant iron that develops a wide range of properties—and colors—in the hands of skilled metalsmiths.',
-                colour: 0x7c9a7c,
+                color: 0x7c9a7c,
                 texture: 'metal-plate'
             },
             {
                 name: 'Phrik',
                 description: 'Rare metallic compound. Extremely light and durable.',
-                colour: 0x43484b,
+                color: 0x43484b,
                 texture: 'metal-plate'
             },
             {
                 name: 'Byeshk',
                 description: 'It is a rare metal with a purple sheen.',
-                colour: 0x9c7f9c,
+                color: 0x9c7f9c,
                 texture: 'metal-plate'
             },
             {
                 name: 'Obdurium',
                 description: 'Incredibly rare and hard black metal.',
-                colour: 0x101010,
+                color: 0x101010,
                 texture: 'metal-plate'
             }
         ]
@@ -283,10 +283,14 @@ function ShipGenerator(config) {
         //TODO: Here is only one engine for now. Make more engines
         bottomLine.splice(0, 0, []);
         bottomLine.splice(0, 0, []);
+        bottomLine.splice(0, 0, []);
+        leftLine.splice(0, 0, []);
         leftLine.splice(0, 0, []);
         leftLine.splice(0, 0, []);
         topLine.splice(0, 0, []);
         topLine.splice(0, 0, []);
+        topLine.splice(0, 0, []);
+        rightLine.splice(0, 0, []);
         rightLine.splice(0, 0, []);
         rightLine.splice(0, 0, []);
 
@@ -309,16 +313,22 @@ function ShipGenerator(config) {
                     break;
             }
 
+            currentArray[2] = {
+                x: engineTemplate[i].x * engineRatio,
+                y: engineTemplate[i].y * engineRatio,
+                z: ((engineTemplate[i].z - engineAvgZ) * engineRatio) + engineAvgZ
+            }
             currentArray[1] = {
-                x: engineTemplate[i].x,
-                y: engineTemplate[i].y,
-                z: engineTemplate[i].z
+                x: engineTemplate[i].x * engineRatio * mufflerRatio,
+                y: engineTemplate[i].y * engineRatio * mufflerRatio,
+                z: engineMaxZ * 0.95
             }
             currentArray[0] = {
-                x: engineTemplate[i].x * mufflerRatio,
-                y: engineTemplate[i].y * mufflerRatio,
-                z: engineMaxZ
+                x: engineTemplate[i].x * engineRatio,
+                y: engineTemplate[i].y * engineRatio,
+                z: ((engineTemplate[i].z - engineAvgZ) * engineRatio) + engineAvgZ
             }
+
         };
     }
 
@@ -416,8 +426,6 @@ function ShipGenerator(config) {
                     wingPoint.x = wingPoint.x + (wingPoint.x / distance * this.wingsLength * wingFactor);
                     wingPoint.y = wingPoint.y + (wingPoint.y / distance * this.wingsLength * wingFactor);
                 }
-
-                console.log([wingPoint.x, wingPoint.y]);
             };
         };
 
@@ -499,87 +507,35 @@ function ShipGenerator(config) {
         0 0 0
         0 1 1
         0 2 2
-        1 0 
+        1 0
 
         */
 
+        console.log(traverseLines[0].length);
+
     for (var i = 0, tLen = traverseLines.length; i < tLen; i++) {
         for (var j = 0, pLen = traverseLines[i].length; j < pLen; j++) {
-            //this.geometry.vertices.push(traverseLines[i][j]);
-            tmpArr.push(traverseLines[i][j]);
-            if (i > 1 && j > 1) {
-                var prevLineLen = traverseLines[i-1].length,
-                    currLineLen = traverseLines[i].length,
-                    p1i = i*prevLineLen + j - 1,
-                    p2i = i*currLineLen + j - 1,
-                    p3i = i*currLineLen + j,
-                    p4i = i*prevLineLen + j,
-                    p1 = traverseLines[i-1][j-1],
-                    p2 = traverseLines[i][j-1],
-                    p3 = traverseLines[i][j],
-                    p4 = traverseLines[i-1][j];
 
-                    console.log([tmpArr[p1i], p1]);
-                    console.log([tmpArr[p2i], p2]);
-                    console.log([tmpArr[p3i], p3]);
-                    console.log([tmpArr[p4i], p4]);
+            this.geometry.vertices.push(traverseLines[i][j]);
+
+            if (i > 0 && j > 0) {
+                var p1i = ((i - 1) * pLen) + j - 1,
+                    p2i = ((i) * pLen) + j - 1,
+                    p3i = ((i) * pLen) + j,
+                    p4i = ((i - 1) * pLen) + j;
+
+                console.log([p1i, p2i, p3i, p4i]);
 
                 if(j > pLen / 2) {
-                    //this.geometry.faces.push([p1, p2, p3]);
-                    //this.geometry.faces.push([p1, p3, p4]);
+                    this.geometry.faces.push([p1i, p2i, p3i]);
+                    this.geometry.faces.push([p1i, p3i, p4i]);
                 } else {
-                    //this.geometry.faces.push([p2, p1, p4]);
-                    //this.geometry.faces.push([p2, p4, p3]);
+                    this.geometry.faces.push([p4i, p1i, p2i]);
+                    this.geometry.faces.push([p3i, p4i, p2i]);
                 }
             }
         }
-    }   
-
-    for (var i = 1, tLen = traverseLines.length; i < tLen; i++) {
-
-        var traverseLine = traverseLines[i];
-
-        for (var j = 1, pLen = traverseLine.length; j < pLen; j++) {
-            var p1 = traverseLines[i-1][j-1],
-                p2 = traverseLines[i][j-1],
-                p3 = traverseLines[i][j],
-                p4 = traverseLines[i-1][j];
-
-            if(j > pLen / 2) {
-                this.geometry.vertices.push(p1);
-                this.geometry.vertices.push(p2);
-                this.geometry.vertices.push(p2);
-                this.geometry.vertices.push(p3);
-                this.geometry.vertices.push(p3);
-                this.geometry.vertices.push(p1);
-                this.geometry.vertices.push(p1);
-                this.geometry.vertices.push(p4);
-                this.geometry.vertices.push(p4);
-                this.geometry.vertices.push(p3);
-                this.geometry.vertices.push(p3);
-                this.geometry.vertices.push(p1);
-            } else {
-                this.geometry.vertices.push(p2);
-                this.geometry.vertices.push(p1);
-                this.geometry.vertices.push(p1);
-                this.geometry.vertices.push(p4);
-                this.geometry.vertices.push(p4);
-                this.geometry.vertices.push(p2);
-                this.geometry.vertices.push(p2);
-                this.geometry.vertices.push(p3);
-                this.geometry.vertices.push(p3);
-                this.geometry.vertices.push(p4);
-                this.geometry.vertices.push(p4);
-                this.geometry.vertices.push(p2);
-            }
-        };
-    };
-
-/*
-    for (var j = 1, pLen = engineTemplate.length; j < pLen; j++) {
-        this.geometry.vertices.push(engineTemplate[j-1]);
-        this.geometry.vertices.push(engineTemplate[j]);
-    };*/
+    }
 }
 
 ShipGenerator.prototype.fluidStyle = function(points) {

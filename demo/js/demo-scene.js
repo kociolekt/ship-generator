@@ -8,6 +8,8 @@ var config = {
 
 var generator = new ShipGenerator(config);
 
+console.log(generator);
+
 /* Creating scene */
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
@@ -20,19 +22,56 @@ controls.damping = 0.2;
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize( window.innerWidth, window.innerHeight );
 
-var light = new THREE.PointLight( 0xffffff, 1, 100 );
-light.position.set( 50, 50, 50 );
-scene.add( light );
+/*
+var ambientLight = new THREE.AmbientLight( 0x222222 );
+scene.add( ambientLight );
+*/
+
+var lights = [];
+lights[0] = new THREE.PointLight( 0xffffff, 1, 0 );
+lights[1] = new THREE.PointLight( 0xffffff, 1, 0 );
+lights[2] = new THREE.PointLight( 0xffffff, 1, 0 );
+
+lights[0].position.set( 0, 200, 0 );
+lights[1].position.set( 100, 200, 100 );
+lights[2].position.set( -100, -200, -100 );
+
+scene.add( lights[0] );
+scene.add( lights[1] );
+scene.add( lights[2] );
+
+
+// directional lighting
+/*
+var directionalLight = new THREE.DirectionalLight(0xffffff);
+directionalLight.position.set(1, 1, 1).normalize();
+scene.add(directionalLight);*/
 
 /* transform ship model to three.js model */
 var shipGeometry = new THREE.Geometry();
 for (var i = 0, vLen = generator.geometry.vertices.length; i < vLen; i++) {
     shipGeometry.vertices.push(generator.geometry.vertices[i]);
 };
-var shipMaterial = new THREE.LineBasicMaterial({
-    color: 0xd0d0d0
-});
-var ship = new THREE.Line( shipGeometry, shipMaterial, THREE.LinePieces );
+for (var i = 0, fLen = generator.geometry.faces.length; i < fLen; i++) {
+    shipGeometry.faces.push( new THREE.Face3( generator.geometry.faces[i][0], generator.geometry.faces[i][1], generator.geometry.faces[i][2] ) );
+};
+shipGeometry.computeFaceNormals();
+shipGeometry.computeVertexNormals();
+
+console.log(generator.shipHullMaterial.color);
+
+var ship = THREE.SceneUtils.createMultiMaterialObject( shipGeometry, [
+    new THREE.MeshLambertMaterial({ color: generator.shipHullMaterial.color, shading: THREE.FlatShading } )/*,
+    new THREE.MeshPhongMaterial({
+        depthTest: true,
+        depthWrite: true,
+        color: generator.shipHullMaterial.color,
+        specular: 0x222222,
+        shininess: 10,
+        shading: THREE.FlatShading
+        //shading: THREE.SmoothShading
+    })*/
+]);
 scene.add( ship );
 
 //Add Grid
