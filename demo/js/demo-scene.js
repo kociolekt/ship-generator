@@ -61,7 +61,11 @@ shipGeometry.computeVertexNormals();
 console.log(generator.shipHullMaterial.color);
 
 var ship = THREE.SceneUtils.createMultiMaterialObject( shipGeometry, [
-    new THREE.MeshLambertMaterial({ color: generator.shipHullMaterial.color, shading: THREE.FlatShading } )/*,
+    new THREE.MeshLambertMaterial({
+        color: generator.shipHullMaterial.color,
+        //shading: THREE.FlatShading
+        shading: THREE.SmoothShading
+    } )/*,
     new THREE.MeshPhongMaterial({
         depthTest: true,
         depthWrite: true,

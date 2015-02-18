@@ -22,7 +22,7 @@ function ShipGenerator(config) {
 		maxBodyBreakPoints: 3,
         minWingsNumber: 0,
         maxWingsNumber: 4,
-		bodyType: 'linearStyle', // fluidStyle|linearStyle
+		bodyType: 'fluidStyle', // fluidStyle|linearStyle
         symmetrical: true,
         noseCut: false,
         tailCut: true,
@@ -272,6 +272,8 @@ function ShipGenerator(config) {
             }
         };
 
+        engineAvgX = engineAvgX / engineTemplate.length;
+        engineAvgY = engineAvgY / engineTemplate.length;
         engineAvgZ = engineAvgZ / engineTemplate.length;
 
         for (var i = 0, pLen = engineTemplate.length; i < pLen; i++) {
@@ -328,7 +330,6 @@ function ShipGenerator(config) {
                 y: engineTemplate[i].y * engineRatio,
                 z: ((engineTemplate[i].z - engineAvgZ) * engineRatio) + engineAvgZ
             }
-
         };
     }
 
@@ -527,11 +528,11 @@ function ShipGenerator(config) {
                 console.log([p1i, p2i, p3i, p4i]);
 
                 if(j > pLen / 2) {
-                    this.geometry.faces.push([p1i, p2i, p3i]);
-                    this.geometry.faces.push([p1i, p3i, p4i]);
-                } else {
                     this.geometry.faces.push([p4i, p1i, p2i]);
                     this.geometry.faces.push([p3i, p4i, p2i]);
+                } else {
+                    this.geometry.faces.push([p1i, p2i, p3i]);
+                    this.geometry.faces.push([p1i, p3i, p4i]);
                 }
             }
         }
