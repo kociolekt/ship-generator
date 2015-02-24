@@ -63,18 +63,8 @@ console.log(generator.shipHullMaterial.color);
 var ship = THREE.SceneUtils.createMultiMaterialObject( shipGeometry, [
     new THREE.MeshLambertMaterial({
         color: generator.shipHullMaterial.color,
-        shading: THREE.FlatShading
-        //shading: THREE.SmoothShading
-    } )/*,
-    new THREE.MeshPhongMaterial({
-        depthTest: true,
-        depthWrite: true,
-        color: generator.shipHullMaterial.color,
-        specular: 0x222222,
-        shininess: 10,
-        shading: THREE.FlatShading
-        //shading: THREE.SmoothShading
-    })*/
+        shading: generator.settings.bodyType === 'fluidStyle' ? THREE.SmoothShading : THREE.FlatShading
+    } )
 ]);
 scene.add( ship );
 
