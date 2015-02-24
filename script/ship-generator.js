@@ -19,7 +19,7 @@ function ShipGenerator(config) {
 		minHeight: 5,
 		maxHeight: 15,
 		minBodyBreakPoints: 1,
-		maxBodyBreakPoints: 3,
+		maxBodyBreakPoints: 4,
         minWingsNumber: 0,
         maxWingsNumber: 4,
 		bodyType: 'fluidStyle', // fluidStyle|linearStyle
