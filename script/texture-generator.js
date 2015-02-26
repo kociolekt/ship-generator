@@ -37,3 +37,33 @@ TextureGenerator.prototype.generate = function() {
 		}
 	}
 }
+
+function Perlin(options) {
+    var defaults = {
+        persistence: 1/2,
+        octaves: 6
+    }
+
+    this.settings = defaults.extend(options);
+
+
+}
+
+Perlin.prototype.preprocess = function(first_argument) {
+    this.frequecies = [];
+    this.aplitudes = [];
+
+    for (var i = 0; i < octaves; i++) {
+        this.frequecies.push(Math.pow(2, i));
+        this.aplitudes.push(Math.pow(this.settings.persistence, i));
+    }
+
+
+};
+
+var Random = {
+    random: function(x) {
+        x = (x<<13) ^ x;
+        return ( 1.0 - ( (x * (x * x * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0);
+    }
+};
