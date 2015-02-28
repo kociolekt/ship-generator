@@ -16,7 +16,7 @@ function TextureGenerator(options) {
 
 	this.settings = defaults.extend(options);
 	this.context = this.createContext(this.settings.width, this.settings.height);
-	this.noiseGenerator = new PerlinOriginal();
+	this.noiseGenerator = new AnotherPerlin();
 	this.generate();
 }
 
@@ -32,14 +32,14 @@ TextureGenerator.prototype.generate = function() {
         value = 0;
 	for (var x = 0; x < this.settings.width; x++) {
 		for (var y = 0; y < this.settings.height; y++) {
-            var nx = x/this.settings.width;
-            var ny = y/this.settings.height;
+            var nx = x;
+            var ny = y;
             var n1 = this.noiseGenerator.noise(nx, ny);
-            var n2 = this.noiseGenerator.noise(nx*2, ny*2)/2;
-            var n3 = this.noiseGenerator.noise(nx*4, ny*4)/4;
-
-			value = Math.abs(((n1 + n2 + n3 + n1 + n2 + n3) * 255)) & 0x000000ff;
-			this.context.fillStyle = 'rgba('+value+', '+value+', '+value+', 1)';//'rgb('+value+','+value+','+value+')';
+            var hue = 169;
+            var sat = 100;
+            var lgh = 10 + ((n1) * 60);
+			//this.context.fillStyle = 'rgba('+value+', '+value+', '+value+', 1)';//'rgb('+value+','+value+','+value+')';
+			this.context.fillStyle = 'hsl(' + hue + ', ' + sat + '%, '+lgh+'%)';
 			this.context.fillRect( x, y, 1, 1 );
 		}
 	}
