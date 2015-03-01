@@ -559,22 +559,27 @@ FastPerlin.prototype.noise = function(x, y) {
 
 
 
-function AnotherPerlin() {
-    this.noiseWidth = 128;
-    this.noiseHeight = 128;
-    this.octaves = 1024;
+function AnotherPerlin(options) {
 
-    size = this.noiseWidth;
+    var defaults = {
+        width: 128,
+        height: 128,
+        octaves: 16
+    }
+
+    this.settings = defaults.extend(options);
+
+    size = this.settings.width;
     this.noiseData = new Array(size);
-    while(size--) this.noiseData[size] = new Array(this.noiseHeight);
+    while(size--) this.noiseData[size] = new Array(this.settings.height);
 
     this.init();
 }
 
 AnotherPerlin.prototype.init = function() {
 
-    for (var x = 0; x < this.noiseWidth; x++) {
-        for (var y = 0; y < this.noiseHeight; y++) {
+    for (var x = 0; x < this.settings.width; x++) {
+        for (var y = 0; y < this.settings.height; y++) {
             this.noiseData[x][y] = ((Math.random() * 32768) % 32768) / 32768.0;
         }
     }
@@ -590,12 +595,12 @@ AnotherPerlin.prototype.smoothed = function(x, y) {
     var fractY = y - iy;
     
     //wrap around
-    var x1 = (ix + this.noiseWidth) % this.noiseWidth;
-    var y1 = (iy + this.noiseHeight) % this.noiseHeight;
+    var x1 = (ix + this.settings.width) % this.settings.width;
+    var y1 = (iy + this.settings.height) % this.settings.height;
     
     //neighbor values
-    var x2 = (x1 + this.noiseWidth - 1) % this.noiseWidth;
-    var y2 = (y1 + this.noiseHeight - 1) % this.noiseHeight;
+    var x2 = (x1 + this.settings.width - 1) % this.settings.width;
+    var y2 = (y1 + this.settings.height - 1) % this.settings.height;
 
     //smooth the noise with bilinear interpolation
     var value = 0.0;
@@ -610,7 +615,7 @@ AnotherPerlin.prototype.smoothed = function(x, y) {
 AnotherPerlin.prototype.noise = function(x, y) {
 
     var value = 0, 
-        size = this.octaves, 
+        size = this.settings.octaves, 
         initialSize = size,
         iterations = 0;
     
