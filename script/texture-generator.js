@@ -46,3 +46,33 @@ TextureGenerator.prototype.clouds = function() {
 		}
 	}
 }
+
+TextureGenerator.prototype.marble = function() {
+
+    //xPeriod and yPeriod together define the angle of the lines
+    //xPeriod and yPeriod both 0 ==> it becomes a normal clouds or turbulence pattern
+    var xPeriod = 5; //defines repetition of marble lines in x direction
+    var yPeriod = 10; //defines repetition of marble lines in y direction
+    //turbPower = 0 ==> it becomes a normal sine pattern
+    var turbPower = 5; //makes twists
+    var turbSize = 32; //initial size of the turbulence
+
+	var noiseGenerator = new AnotherPerlin({
+			width: this.settings.width,
+			height: this.settings.height,
+			octaves: turbSize
+		}),
+		value = 0;
+
+	for (var x = 0; x < this.settings.width; x++) {
+		for (var y = 0; y < this.settings.height; y++) {
+
+            var value = noiseGenerator.noise(x, y) * 100;
+
+            var xyValue = x * xPeriod / this.settings.height + y * yPeriod / this.settings.width + turbPower * noiseGenerator.noise(x, y) / 256.0;
+
+			this.context.fillStyle = 'hsl(200, 100%, '+lgh+'%)';
+			this.context.fillRect( x, y, 1, 1 );
+		}
+	}
+}
