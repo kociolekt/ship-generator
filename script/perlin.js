@@ -422,12 +422,12 @@ function FastPerlin() {
 
 FastPerlin.prototype.noise = function(x, y) {
 
-    var result = 0;      
-    var frequence256 = 256; 
-    var sx = Math.floor((x)*frequence256); 
-    var sy = Math.floor((y)*frequence256); 
+    var result = 0;
+    var frequence256 = 256;
+    var sx = Math.floor((x)*frequence256);
+    var sy = Math.floor((y)*frequence256);
     var octaves = this.octaves;
-    var octave=octaves;  
+    var octave=octaves;
 
     while(octave != 0) {
         var bX = sx&0xFF;
@@ -435,7 +435,7 @@ FastPerlin.prototype.noise = function(x, y) {
 
         var sxp = sx>>8;
         var syp = sy>>8;
-        
+
 
         //Compute noise for each corner of current cell
         var Y1376312589_00=syp*1376312589;
@@ -455,27 +455,27 @@ FastPerlin.prototype.noise = function(x, y) {
         var alt2=(XYBASE_10 * (XYBASE_10 * XYBASE_10 * 15731 + 789221) + 1376312589);
         var alt3=(XYBASE_01 * (XYBASE_01 * XYBASE_01 * 15731 + 789221) + 1376312589);
         var alt4=(XYBASE_11 * (XYBASE_11 * XYBASE_11 * 15731 + 789221) + 1376312589);
-        
+
         /*
          *NOTE : on  for true grandiant noise uncomment following block
          * for true gradiant we need to perform scalar product here, gradiant vector are created/deducted using
-         * the above pseudo random values (alt1...alt4) : by cutting thoses values in twice values to get for each a fixed x,y vector 
-         * gradX1= alt1&0xFF 
+         * the above pseudo random values (alt1...alt4) : by cutting thoses values in twice values to get for each a fixed x,y vector
+         * gradX1= alt1&0xFF
          * gradY1= (alt1&0xFF00)>>8
          *
          * the last part of the PRN (alt1&0xFF0000)>>8 is used as an offset to correct one of the gradiant problem wich is zero on cell edge
          *
          * source vector (sXN;sYN) for scalar product are computed using (bX,bY)
          *
-         * each four values  must be replaced by the result of the following 
+         * each four values  must be replaced by the result of the following
          * altN=(gradXN;gradYN) scalar (sXN;sYN)
          *
          * all the rest of the code (interpolation+accumulation) is identical for value & gradiant noise
          */
-         
-         
+
+
         /*START BLOCK FOR TRUE GRADIANT NOISE*/
-        
+
          var grad1X=(alt1&0xFF)-128;
          var grad1Y=((alt1>>8)&0xFF)-128;
          var grad2X=(alt2&0xFF)-128;
@@ -484,8 +484,8 @@ FastPerlin.prototype.noise = function(x, y) {
          var grad3Y=((alt3>>8)&0xFF)-128;
          var grad4X=(alt4&0xFF)-128;
          var grad4Y=((alt4>>8)&0xFF)-128;
-         
-         
+
+
          var sX1=bX>>1;
          var sY1=bY>>1;
          var sX2=128-sX1;
@@ -498,10 +498,10 @@ FastPerlin.prototype.noise = function(x, y) {
          alt2=(grad2X*sX2+grad2Y*sY2)+16384+((alt2&0xFF0000)>>9);
          alt3=(grad3X*sX3+grad3Y*sY3)+16384+((alt3&0xFF0000)>>9);
          alt4=(grad4X*sX4+grad4Y*sY4)+16384+((alt4&0xFF0000)>>9);
-         
+
         /*END BLOCK FOR TRUE GRADIANT NOISE */
-        
-        
+
+
         /*START BLOCK FOR VALUE NOISE*/
         /*
          alt1&=0xFFFF;
@@ -510,10 +510,10 @@ FastPerlin.prototype.noise = function(x, y) {
          alt4&=0xFFFF;
          */
         /*END BLOCK FOR VALUE NOISE*/
-        
-        
+
+
         /*START BLOCK FOR LINEAR INTERPOLATION*/
-        //BiLinear interpolation 
+        //BiLinear interpolation
         /*
         int f24=(bX*bY)>>8;
         int f23=bX-f24;
@@ -523,9 +523,9 @@ FastPerlin.prototype.noise = function(x, y) {
         int val=(alt1*f13+alt2*f23+alt3*f14+alt4*f24);
         */
         /*END BLOCK FOR LINEAR INTERPOLATION*/
-        
-        
-        
+
+
+
         //BiCubic interpolation ( in the form alt(bX) = alt[n] - (3*bX^2 - 2*bX^3) * (alt[n] - alt[n+1]) )
         /*START BLOCK FOR BICUBIC INTERPOLATION*/
         var bX2=(bX*bX)>>8;
@@ -534,27 +534,27 @@ FastPerlin.prototype.noise = function(x, y) {
         var _2bX3=2*bX3;
         var alt12= alt1 - (((_3bX2 - _2bX3) * (alt1-alt2)) >> 8);
         var alt34= alt3 - (((_3bX2 - _2bX3) * (alt3-alt4)) >> 8);
-        
-        
+
+
         var bY2=(bY*bY)>>8;
         var bY3=(bY2*bY)>>8;
         var _3bY2=3*bY2;
         var _2bY3=2*bY3;
         var val= alt12 - (((_3bY2 - _2bY3) * (alt12-alt34)) >> 8);
-        
+
         val*=256;
         /*END BLOCK FOR BICUBIC INTERPOLATION*/
-        
-        
+
+
         //Accumulate in result
         result+=(val<<octave);
-        
+
         octave--;
-        sx<<=1; 
+        sx<<=1;
         sy<<=1;
-       
+
     }
-    return result>>>(16+octaves+1);   
+    return result>>>(16+octaves+1);
 }
 
 
@@ -593,11 +593,11 @@ AnotherPerlin.prototype.smoothed = function(x, y) {
     //get fractional part of x and y
     var fractX = x - ix;
     var fractY = y - iy;
-    
+
     //wrap around
     var x1 = (ix + this.settings.width) % this.settings.width;
     var y1 = (iy + this.settings.height) % this.settings.height;
-    
+
     //neighbor values
     var x2 = (x1 + this.settings.width - 1) % this.settings.width;
     var y2 = (y1 + this.settings.height - 1) % this.settings.height;
@@ -614,17 +614,17 @@ AnotherPerlin.prototype.smoothed = function(x, y) {
 
 AnotherPerlin.prototype.noise = function(x, y) {
 
-    var value = 0, 
-        size = this.settings.octaves, 
+    var value = 0,
+        size = this.settings.octaves,
         initialSize = size,
         iterations = 0;
-    
+
     while(size >= 1) {
-        value += this.smoothed(x / size, y / size);
+        value += this.smoothed(x / size, y / size) * size;
         size /= 2;
-        iterations++;
+        iterations += size;
     }
-    
+
     return (value / iterations);
 
 };
