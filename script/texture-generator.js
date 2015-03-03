@@ -9,13 +9,13 @@ Object.prototype.extend = function(obj) {
 function TextureGenerator(options) {
 
 	var defaults = {
-		width: 512,
-		height: 512
+		width: 2048,
+		height: 2048
 	}
 
 	this.settings = defaults.extend(options);
 	this.context = this.createContext(this.settings.width, this.settings.height);
-	this.nebula();
+	this.perling();
 }
 
 TextureGenerator.prototype.createContext = function(width, height) {
@@ -45,7 +45,7 @@ TextureGenerator.prototype.clouds = function() {
 			this.context.fillRect( x, y, 1, 1 );
 		}
 	}
-}
+};
 
 TextureGenerator.prototype.marble = function() {
 
@@ -77,8 +77,7 @@ TextureGenerator.prototype.marble = function() {
 			this.context.fillRect( x, y, 1, 1 );
 		}
 	}
-}
-
+};
 
 TextureGenerator.prototype.wood = function() {
 
@@ -105,27 +104,27 @@ TextureGenerator.prototype.wood = function() {
             this.context.fillRect( x, y, 1, 1 );
         }
     }
-}
+};
 
 TextureGenerator.prototype.nebula = function() {
     var cloudGenerator = new AnotherPerlin({
-            width: this.settings.width,
-            height: this.settings.height,
+            width: this.settings.width/4,
+            height: this.settings.height/4,
             octaves: 256
         }),
         redGenerator = new AnotherPerlin({
-            width: this.settings.width,
-            height: this.settings.height,
+            width: this.settings.width/4,
+            height: this.settings.height/4,
             octaves: 512
         }),
         greenGenerator = new AnotherPerlin({
-            width: this.settings.width,
-            height: this.settings.height,
+            width: this.settings.width/4,
+            height: this.settings.height/4,
             octaves: 512
         }),
         blueGenerator = new AnotherPerlin({
-            width: this.settings.width,
-            height: this.settings.height,
+            width: this.settings.width/4,
+            height: this.settings.height/4,
             octaves: 512
         }),
         value = 0;
@@ -145,6 +144,38 @@ TextureGenerator.prototype.nebula = function() {
 
             this.context.fillStyle = 'rgb('+red+', '+green+', '+blue+')';
             this.context.fillRect( x, y, 1, 1 );
+        }
+    }
+};
+
+TextureGenerator.prototype.perling = function() {
+    var width = this.settings.width,
+    	height = this.settings.height,
+    	cloudGenerator = new PerlinG(),
+    	value = 0;
+
+    for (var x = 0; x < width; x++) {
+        for (var y = 0; y < height; y++) {
+
+        	value = cloudGenerator.perlin(x, y);
+        	color = Math.abs(value * 255) | 0;
+
+            this.context.fillStyle = 'rgb('+color+', '+color+', '+color+')';
+            this.context.fillRect( x, y, 1, 1 );
+
+/*
+            var cover = 64,
+                sharpness = 0.95,
+                value = cloudGenerator.noise(x, y) * 128,
+                c = (value - (128 - cover)) < 0 ? 0 : (value - (128 - cover)),
+                black = 1 + ((Math.pow(sharpness, c))*64);
+
+            var red = (Math.abs(redGenerator.noise(x, y) * 128) / black ) & 0xFF,
+                green = (Math.abs(greenGenerator.noise(x, y) * 128) / black ) & 0xFF,
+                blue = (Math.abs(blueGenerator.noise(x, y) * 128) / black ) & 0xFF;
+
+            this.context.fillStyle = 'rgb('+red+', '+green+', '+blue+')';
+            this.context.fillRect( x, y, 1, 1 );*/
         }
     }
 }

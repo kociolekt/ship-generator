@@ -628,3 +628,70 @@ AnotherPerlin.prototype.noise = function(x, y) {
     return (value / iterations);
 
 };
+
+
+/**
+    PerlinG
+**/
+function PerlinG(options) {
+    var defaults = {
+        size: 2048,
+        octaves: 11,
+        period: 65536,
+        frequency: 1/32
+    }
+
+    this.settings = defaults.extend(options);
+
+    size = this.settings.period;
+    this.perm = new Array(size);
+    while(size--) this.perm[size] = size;
+    this.shuffle(this.perm);
+    this.perm.push.apply(this.perm, this.perm);
+
+    size = this.settings.period;
+    this.dirs = new Array(size);
+    while(size--) this.dirs[size] = [Math.cos((this.settings.period - size - 1) * 2.0 * Math.PI / 256), Math.sin((this.settings.period - size - 1) * 2.0 * Math.PI / 256)];
+}
+
+PerlinG.prototype.shuffle = function(o) {
+    for(var j, x, i = o.length; i; j = ((Math.random() * i) | 0), x = o[--i], o[i] = o[j], o[j] = x);
+    return o;
+};
+
+PerlinG.prototype.surflet = function(x, y, gridX, gridY, per) {
+
+    var distX = Math.abs(x - gridX),
+        distY = Math.abs(y - gridY);
+
+    var polyX = 1 - (6 * Math.pow(distX, 5)) + (15 * Math.pow(distX, 4)) - (10 * Math.pow(distX, 3));
+    var polyY = 1 - (6 * Math.pow(distY, 5)) + (15 * Math.pow(distY, 4)) - (10 * Math.pow(distY, 3));
+    var hashed = this.perm[this.perm[(gridX | 0) % per] + (gridY | 0) % per];
+    var grad = (x - gridX) * this.dirs[hashed][0] + (y - gridY) * this.dirs[hashed][1];
+
+    return polyX * polyY * grad;
+};
+
+PerlinG.prototype.noise = function(x, y, per) {
+
+    var intX = x | 0,
+        intY = y | 0;
+
+    return (this.surflet(x, y, intX+0, intY+0, per) + this.surflet(x, y, intX+1, intY+0, per) + this.surflet(x, y, intX+0, intY+1, per) + this.surflet(x, y, intX+1, intY+1, per));
+};
+
+PerlinG.prototype.perlin = function(x, y) {
+    var freq = this.settings.frequency,
+        size = this.settings.size,
+        x = x*freq,
+        y = y*freq,
+        per = (size*freq) | 0,
+        octs = this.settings.octaves,
+        val = 0;
+
+    for (var o = 0; o < octs; o++) {
+        val += Math.pow(0.5, o) * this.noise(x * Math.pow(2, o), y * Math.pow(2, o), per * Math.pow(2, o));
+    };
+
+    return val;
+};
