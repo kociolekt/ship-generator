@@ -15,7 +15,7 @@ function TextureGenerator(options) {
 
 	this.settings = defaults.extend(options);
 	this.context = this.createContext(this.settings.width, this.settings.height);
-	this.perling();
+	this.plating();
 }
 
 TextureGenerator.prototype.createContext = function(width, height) {
@@ -179,3 +179,70 @@ TextureGenerator.prototype.perling = function() {
         }
     }
 }
+
+TextureGenerator.prototype.plating = function() {
+    var width = this.settings.width,
+        height = this.settings.height,
+        ctx = this.context,
+        h = 100,
+        s = 50,
+        l = 50;
+
+    this.baseColor = 'hsl('+h+', '+s+'%, '+l+'% )',
+    this.lightenColor = 'hsl('+h+', '+s+'%, '+((l+10) > 100 ? 100 : (l+10))+'% )',
+    this.darkenColor = 'hsl('+h+', '+s+'%, '+((l-10) < 0 ? 0: (l-10))+'% )';
+
+    //put base color
+
+    ctx.beginPath();
+    ctx.rect(0, 0, width, height);
+    ctx.fillStyle = this.baseColor;
+    ctx.fill();
+
+    /*
+        nail
+    */
+    this.platingNail(102, 102, 1);
+
+    /*
+        hatch
+    */
+    this.platingHatch(150, 50, 15, 1);
+
+}
+
+TextureGenerator.prototype.platingNail = function(nailX, nailY, nailRadius) {
+    this.context.beginPath();
+    this.context.arc(nailX + 0.5, nailY + 0.5, nailRadius, 0, 2 * Math.PI, false);
+    this.context.lineWidth = 1;
+    this.context.strokeStyle = this.lightenColor;
+    this.context.stroke();
+
+    this.context.beginPath();
+    this.context.arc(nailX, nailY, nailRadius, 0, 2 * Math.PI, false);
+    this.context.lineWidth = 1;
+    this.context.strokeStyle = this.darkenColor;
+    this.context.stroke();
+    this.context.fillStyle = this.darkenColor;
+    this.context.fill();
+};
+
+TextureGenerator.prototype.platingHatch = function(hatchX, hatchY, hatchSize, hatchHeight) {
+    this.context.beginPath();
+    this.context.arc(hatchX + hatchHeight, hatchY + hatchHeight, hatchSize, 0, 2 * Math.PI, false);
+    this.context.lineWidth = 1;
+    this.context.strokeStyle = this.lightenColor;
+    this.context.stroke();
+
+    this.context.beginPath();
+    this.context.arc(hatchX, hatchY, hatchSize, 0, 2 * Math.PI, false);
+    this.context.lineWidth = 1;
+    this.context.strokeStyle = this.darkenColor;
+    this.context.stroke();
+    this.context.fillStyle = this.baseColor;
+    this.context.fill();
+
+    this.platingNail(hatchX - 2, hatchY + (hatchSize * 3 / 4), 0.5);
+    this.platingNail(hatchX, hatchY + (hatchSize * 3 / 4), 0.5);
+    this.platingNail(hatchX + 2, hatchY + (hatchSize * 3 / 4), 0.5);
+};
