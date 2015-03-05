@@ -13,6 +13,7 @@ function TextureGenerator(options) {
 		height: 2048
 	}
 
+    this.ship = new ShipGenerator();
 	this.settings = defaults.extend(options);
 	this.context = this.createContext(this.settings.width, this.settings.height);
 	this.plating();
@@ -187,6 +188,8 @@ TextureGenerator.prototype.plating = function() {
         h = 100,
         s = 50,
         l = 50;
+
+    console.log(this.ship.geometry.faceVertexUvs[0]);
 
     this.baseColor = 'hsl('+h+', '+s+'%, '+l+'% )',
     this.lightenColor = 'hsl('+h+', '+s+'%, '+((l+10) > 100 ? 100 : (l+10))+'% )',

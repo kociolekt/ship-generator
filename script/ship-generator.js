@@ -146,7 +146,8 @@ function ShipGenerator(config) {
 
     this.geometry = {
         vertices: [],
-        faces: []
+        faces: [],
+        faceVertexUvs: []
     }
 
     //ClassBasedConfig
@@ -625,8 +626,31 @@ function ShipGenerator(config) {
 
         */
 
+    var bbox = {
+        min: {
+            x: 9999999999,
+            y: 9999999999,
+            z: 9999999999
+        },
+        max: {
+            x: -9999999999,
+            y: -9999999999,
+            z: -9999999999
+        }
+    };
+
     for (var i = 0, tLen = traverseLines.length; i < tLen; i++) {
         for (var j = 0, pLen = traverseLines[i].length; j < pLen; j++) {
+
+            var point = traverseLines[i][j];
+
+            bbox.min.x = Math.min(bbox.min.x, point.x);
+            bbox.min.y = Math.min(bbox.min.y, point.y);
+            bbox.min.z = Math.min(bbox.min.z, point.z);
+
+            bbox.max.x = Math.max(bbox.max.x, point.x);
+            bbox.max.y = Math.max(bbox.max.y, point.y);
+            bbox.max.z = Math.max(bbox.max.z, point.z);
 
             this.geometry.vertices.push(traverseLines[i][j]);
 
@@ -645,6 +669,29 @@ function ShipGenerator(config) {
                 }
             }
         }
+    }
+
+    var max     = bbox.max;
+    var min     = bbox.min;
+
+    var offset  = {x:0 - min.x, y:0 - min.y};
+    var range   = {x:max.x - min.x, y:max.y - min.y};
+
+    this.geometry.faceVertexUvs[0] = [];
+
+    var faces = this.geometry.faces;
+
+    for (i = 0, fLen = this.geometry.faces.length; i < fLen; i++) {
+
+        var v1 = this.geometry.vertices[faces[i][0]];
+        var v2 = this.geometry.vertices[faces[i][1]];
+        var v3 = this.geometry.vertices[faces[i][2]];
+
+        this.geometry.faceVertexUvs[0].push([
+            {x:( v1.x + offset.x ) / range.x, y:( v1.y + offset.y ) / range.y },
+            {x:( v2.x + offset.x ) / range.x, y:( v2.y + offset.y ) / range.y },
+            {x:( v3.x + offset.x ) / range.x, y:( v3.y + offset.y ) / range.y }
+        ]);
     }
 }
 
