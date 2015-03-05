@@ -22,7 +22,7 @@ function ShipGenerator(config) {
 		maxBodyBreakPoints: 4,
         minWingsNumber: 0,
         maxWingsNumber: 4,
-		bodyType: 'fluidStyle', // fluidStyle|linearStyle
+		bodyType: 'linearStyle', // fluidStyle|linearStyle
         symmetrical: true,
         noseCut: false,
         tailCut: true,
@@ -58,7 +58,8 @@ function ShipGenerator(config) {
             ]
         ],
         wingPlacing: 'shape', //'front'|'middle'|'back'|'any'|shape
-        wingShape: 6, // convex 1 - 6 concave
+        wingShape: 'random', // convex 1 - 10 concave || frontSkew, straight, backSkew, random
+        wingInflection: 0.7, //0 - no inflection, 0.9 blade like wings
         minWingLength: 5,
         maxWingLength: 10,
         traverseSegments: 2,
@@ -158,7 +159,9 @@ function ShipGenerator(config) {
         rightLine = [],
     	centerOfMass = {x:0, y:0, z:0},
         startIndex = 0,
-        maxPoints = bodyBreakPointsNumber + 2;
+        maxPoints = bodyBreakPointsNumber + 2,
+        shipNoseZ = 0,
+        shipTailZ = 0;
 
     this.shipHeight = this.randInt(this.settings.minHeight, this.settings.maxHeight);
     this.shipWidth = this.randInt(this.settings.minWidth, this.settings.maxWidth);
@@ -198,6 +201,7 @@ function ShipGenerator(config) {
         bottomLine.push({x:0, y:0, z:(this.shipLength / 2)});
         rightLine.push({x:0, y:0, z:(this.shipLength / 2)});
         leftLine.push({x:0, y:0, z:(this.shipLength / 2)});
+        shipNoseZ = (this.shipLength / 2);
     } else {
         var tilt = this.randInt(this.settings.minCutTailTilt, this.settings.maxCutTailTilt),
             pLen = topLine.length,
@@ -210,6 +214,8 @@ function ShipGenerator(config) {
             topLine[i].z = topLine[i].z + (tilt * tiltStrength);
             bottomLine[i].z = bottomLine[i].z - (tilt * tiltStrength);
         }
+
+        shipNoseZ = Math.max(topLine[lastIndex].z, bottomLine[lastIndex].z);
 
         var avgX = (topLine[lastIndex].x + bottomLine[lastIndex].x + rightLine[lastIndex].x + leftLine[lastIndex].x) / 4;
         var avgY = (topLine[lastIndex].y + bottomLine[lastIndex].y + rightLine[lastIndex].y + leftLine[lastIndex].y) / 4;
@@ -233,6 +239,8 @@ function ShipGenerator(config) {
             bottomLine[i].z = bottomLine[i].z - (tilt * tiltStrength);
         }
     }
+
+    shipTailZ = Math.min(topLine[0].z, bottomLine[0].z);
 
     //Generate engine
     if (!this.settings.tailCut) { //Many hull engines or none
@@ -413,26 +421,131 @@ function ShipGenerator(config) {
             break;
         }
 
-        var convexFactor = this.settings.wingShape;
+        if (typeof this.settings.wingShape === 'number') {
+            var convexFactor = this.settings.wingShape,
+                offset = 0;
 
-        for (var i = 0, tLen = this.wingsType.length; i < tLen; i++) {
+            for (var i = 0, tLen = this.wingsType.length; i < tLen; i++) {
 
-            for (var j = 0, lLen = traverseLines.length; j < lLen; j++) {
-                var wingFactor = Math.pow((lLen - 1 - Math.abs(j - this.wingsPlace)) / (lLen - 1), convexFactor),
-                    wingPointIndex = this.degreeToTraverseIndex(this.wingsType[i]),
-                    wingPoint = traverseLines[j][wingPointIndex],
-                    distance = this.distance({x:0, y:0, z:0}, {x:wingPoint.x, y:wingPoint.y, z:0});
+                var baseTraverseLineLenght = traverseLines[0].length,
+                    wingPointIndex = this.degreeToTraverseIndex(this.wingsType[i]) + offset,
+                    wingPointLeftIndex = wingPointIndex === 0 ? (baseTraverseLineLenght - 2) : (wingPointIndex - 1),
+                    wingPointRightIndex = (baseTraverseLineLenght + (wingPointIndex + 1)) % baseTraverseLineLenght;
 
-                if (distance !== 0) {
-                    wingPoint.x = wingPoint.x + (wingPoint.x / distance * this.wingsLength * wingFactor);
-                    wingPoint.y = wingPoint.y + (wingPoint.y / distance * this.wingsLength * wingFactor);
-                }
+                for (var j = 0, lLen = traverseLines.length; j < lLen; j++) {
+
+                    var wingFactor = Math.pow((lLen - 1 - Math.abs(j - this.wingsPlace)) / (lLen - 1), convexFactor),
+                        wingPoint = traverseLines[j][wingPointIndex],
+                        wingPointLeft = traverseLines[j][wingPointLeftIndex],
+                        wingPointRight = traverseLines[j][wingPointRightIndex],
+                        distance = this.distance({x:0, y:0, z:0}, {x:wingPoint.x, y:wingPoint.y, z:0}),
+                        newWingPointLeft = {
+                            x: this.lerp(wingPointLeft.x, wingPoint.x, this.settings.wingInflection),
+                            y: this.lerp(wingPointLeft.y, wingPoint.y, this.settings.wingInflection),
+                            z: this.lerp(wingPointLeft.z, wingPoint.z, this.settings.wingInflection)
+                        },
+                        newWingPointRight = {
+                            x: this.lerp(wingPointRight.x, wingPoint.x, this.settings.wingInflection),
+                            y: this.lerp(wingPointRight.y, wingPoint.y, this.settings.wingInflection),
+                            z: this.lerp(wingPointRight.z, wingPoint.z, this.settings.wingInflection)
+                        };
+
+                        console.log(wingPointIndex,wingPointLeftIndex ,wingPointRightIndex);
+
+                    if (wingPointIndex === 0) {
+                        traverseLines[j][baseTraverseLineLenght - 1] = wingPoint;
+                    }
+
+                    traverseLines[j].splice(wingPointRightIndex, 0, newWingPointRight);
+                    traverseLines[j].splice(wingPointIndex === 0 ? traverseLines[j].length - 1 : wingPointIndex, 0, newWingPointLeft);
+
+                    if (distance !== 0) {
+                        wingPoint.x = wingPoint.x + (wingPoint.x / distance * this.wingsLength * wingFactor);
+                        wingPoint.y = wingPoint.y + (wingPoint.y / distance * this.wingsLength * wingFactor);
+                    }
+                };
+
+                offset += wingPointIndex === 0 ? 1 : 2;
             };
-        };
+        } else if (typeof this.settings.wingShape === 'string') {
 
-        console.log(['wings: ', this.wingsNumber, this.wingsType, this.wingsPlace, this.wingsLength]);
+            var wingShape = this.settings.wingShape;
+
+            if (wingShape === 'random') {
+                wingShape = (['frontSkew', 'straight', 'backSkew'])[this.randInt(0, 2)];
+            }
+
+            var wingsPlaces = [this.wingsPlace],
+                wingsSkew = 0;
+
+            wingsPlaces.push((this.wingsPlace >= traverseLines.length / 2) ? this.wingsPlace - 1 : this.wingsPlace + 1);
+
+            switch(wingShape) { //frontSkew, straight, backSkew, random
+                case 'frontSkew':
+                        wingsSkew = shipNoseZ * ((wingsPlaces[0] + wingsPlaces[1]) / 2) / (traverseLines.length - 1);
+                    break;
+                case 'backSkew':
+                        wingsSkew = shipTailZ * (1 - ((wingsPlaces[0] + wingsPlaces[1]) / 2) / (traverseLines.length - 1));
+                    break;
+            }
+
+            var offset = 0;
+
+            for (var i = 0, tLen = this.wingsType.length; i < tLen; i++) {
+
+                var baseTraverseLineLenght = traverseLines[0].length,
+                    wingPointIndex = this.degreeToTraverseIndex(this.wingsType[i]) + offset,
+                    wingPointLeftIndex = wingPointIndex === 0 ? (baseTraverseLineLenght - 2) : (wingPointIndex - 1),
+                    wingPointRightIndex = (baseTraverseLineLenght + (wingPointIndex + 1)) % baseTraverseLineLenght,
+                    descriptor = {x: 0, y: -1};
+
+                switch(this.wingsType[i]) {
+                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
+                    case 90: descriptor = {x: 1, y: 0}; break;
+                    case 135: descriptor = {x: 0.70710678118, y: 0.70710678118}; break;
+                    case 180: descriptor = {x: 0, y: 1}; break;
+                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
+                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
+                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
+                }
+
+                for (var j = 0, lLen = traverseLines.length; j < lLen; j++) {
+
+                    var isWing = wingsPlaces.indexOf(j) !== -1,
+                        wingPoint = traverseLines[j][wingPointIndex],
+                        wingPointLeft = traverseLines[j][wingPointLeftIndex],
+                        wingPointRight = traverseLines[j][wingPointRightIndex],
+                        distance = this.distance({x:0, y:0, z:0}, {x:wingPoint.x, y:wingPoint.y, z:0}),
+                        newWingPointLeft = {
+                            x: this.lerp(wingPointLeft.x, wingPoint.x, this.settings.wingInflection),
+                            y: this.lerp(wingPointLeft.y, wingPoint.y, this.settings.wingInflection),
+                            z: this.lerp(wingPointLeft.z, wingPoint.z, this.settings.wingInflection)
+                        },
+                        newWingPointRight = {
+                            x: this.lerp(wingPointRight.x, wingPoint.x, this.settings.wingInflection),
+                            y: this.lerp(wingPointRight.y, wingPoint.y, this.settings.wingInflection),
+                            z: this.lerp(wingPointRight.z, wingPoint.z, this.settings.wingInflection)
+                        };
+
+                    if (wingPointIndex === 0) {
+                        traverseLines[j][baseTraverseLineLenght - 1] = wingPoint;
+                    }
+
+                    traverseLines[j].splice(wingPointRightIndex, 0, newWingPointRight);
+                    traverseLines[j].splice(wingPointIndex === 0 ? traverseLines[j].length - 1 : wingPointIndex, 0, newWingPointLeft);
+
+                    if (isWing && distance !== 0) {
+                        wingPoint.x = (Math.cos((this.wingsType[i] + 90) * (Math.PI/180)) * this.wingsLength);
+                        wingPoint.y = (Math.cos((this.wingsType[i] + 180) * (Math.PI/180)) * this.wingsLength);
+                        wingPoint.z = wingPoint.z + wingsSkew;
+                    }
+                };
+
+                offset += wingPointIndex === 0 ? 1 : 2;
+            };
+        }
     } else {
-        console.log(['no wings']);
+        //console.log(['no wings']);
     }
 
 /*
@@ -512,8 +625,6 @@ function ShipGenerator(config) {
 
         */
 
-        console.log(traverseLines[0].length);
-
     for (var i = 0, tLen = traverseLines.length; i < tLen; i++) {
         for (var j = 0, pLen = traverseLines[i].length; j < pLen; j++) {
 
@@ -524,8 +635,6 @@ function ShipGenerator(config) {
                     p2i = ((i) * pLen) + j - 1,
                     p3i = ((i) * pLen) + j,
                     p4i = ((i - 1) * pLen) + j;
-
-                console.log([p1i, p2i, p3i, p4i]);
 
                 if(j > pLen / 2) {
                     this.geometry.faces.push([p4i, p1i, p2i]);
@@ -689,4 +798,8 @@ ShipGenerator.prototype.degreeToTraverseIndex = function(degree) {
 
     return Math.floor(((this.settings.traverseSegments * 4) + 1) * (degree / 360));
 
+};
+
+ShipGenerator.prototype.lerp = function(a, b, t) {
+    return (1-t)*a + t*b;
 };
