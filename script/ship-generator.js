@@ -147,6 +147,7 @@ function ShipGenerator(config) {
     this.geometry = {
         vertices: [],
         faces: [],
+        normals: [],
         faceVertexUvs: []
     }
 
@@ -658,19 +659,30 @@ function ShipGenerator(config) {
                 var p1i = ((i - 1) * pLen) + j - 1,
                     p2i = ((i) * pLen) + j - 1,
                     p3i = ((i) * pLen) + j,
-                    p4i = ((i - 1) * pLen) + j;
+                    p4i = ((i - 1) * pLen) + j,
+                    f1,
+                    f2;
 
                 if(j > pLen / 2) {
-                    this.geometry.faces.push([p4i, p1i, p2i]);
-                    this.geometry.faces.push([p3i, p4i, p2i]);
+                    f1 = [p4i, p1i, p2i];
+                    f2 = [p3i, p4i, p2i];
+                    this.geometry.faces.push(f1);
+                    this.geometry.faces.push(f2);
                 } else {
+                    f1 = [p1i, p2i, p3i];
+                    f2 = [p1i, p3i, p4i];
                     this.geometry.faces.push([p1i, p2i, p3i]);
                     this.geometry.faces.push([p1i, p3i, p4i]);
                 }
+
+                this.geometry.normals.push(this.computeNormal(f1));
+                this.geometry.normals.push(this.computeNormal(f2));
             }
         }
     }
 
+    //generating uv's
+/*
     var max     = bbox.max;
     var min     = bbox.min;
 
@@ -691,6 +703,26 @@ function ShipGenerator(config) {
             {x:( v1.x + offset.x ) / range.x, y:( v1.y + offset.y ) / range.y },
             {x:( v2.x + offset.x ) / range.x, y:( v2.y + offset.y ) / range.y },
             {x:( v3.x + offset.x ) / range.x, y:( v3.y + offset.y ) / range.y }
+        ]);
+    }*/
+
+    this.geometry.faceVertexUvs[0] = [];
+
+    for (i = 0, fLen = this.geometry.faces.length; i < fLen; i++) {
+        var face = this.geometry.faces[i];
+
+        var components = ['x', 'y', 'z'].sort(function(a, b) {
+            return Math.abs(this.geometry.normals[i][a]) > Math.abs(this.geometry.normals[i][b]);
+        });
+
+        var v1 = this.geometry.vertices[face[0]];
+        var v2 = this.geometry.vertices[face[1]];
+        var v3 = this.geometry.vertices[face[2]];
+
+        this.geometry.faceVertexUvs[0].push([
+            {x:v1[components[0]], y:v1[components[1]] },
+            {x:v2[components[0]], y:v2[components[1]] },
+            {x:v3[components[0]], y:v3[components[1]] }
         ]);
     }
 }
@@ -850,3 +882,38 @@ ShipGenerator.prototype.degreeToTraverseIndex = function(degree) {
 ShipGenerator.prototype.lerp = function(a, b, t) {
     return (1-t)*a + t*b;
 };
+
+
+ShipGenerator.prototype.computeNormal = function(face){
+
+    //perform cross product of two lines on plane
+    var a = face[0],
+        b = face[1],
+        c = face[2],
+        n = this.crossProduct({
+            x: a.x - b.x,
+            y: a.y - b.y,
+            z: a.z - b.z
+        },{
+            x: b.x - c.x,
+            y: b.y - c.y,
+            z: b.z - c.z
+        }),
+        magnitude = this.distance({x:0,y:0,z:0},n);
+
+    if(magnitude > 0) {
+        n.x = n.x / magnitude;  //normalize
+        n.y = n.y / magnitude;
+        n.z = n.z / magnitude;
+    }
+
+    return n;
+};
+
+ShipGenerator.prototype.crossProduct = function(a, b) {
+    return {
+        x: a.y*b.z - a.z*b.y,
+        y: a.z*b.x - a.x*b.z,
+        x: a.x*b.y - a.y*b.x
+    }
+}

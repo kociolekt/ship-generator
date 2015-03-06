@@ -205,12 +205,30 @@ TextureGenerator.prototype.plating = function() {
     /*
         nail
     */
-    this.platingNail(102, 102, 1);
+    //this.platingNail(102, 102, 1);
 
     /*
         hatch
     */
-    this.platingHatch(150, 50, 15, 1);
+    //this.platingHatch(150, 50, 15, 1);
+
+    this.context.lineWidth = 1;
+    this.context.strokeStyle = this.darkenColor;
+
+    for (var i = 0, fuvLen = this.ship.geometry.faceVertexUvs.length; i < fuvLen; i++) {
+        for (var j = 0, uvLen = this.ship.geometry.faceVertexUvs[i].length; j < uvLen; j++) {
+            var a = this.ship.geometry.faceVertexUvs[i][j][0],
+                b = this.ship.geometry.faceVertexUvs[i][j][1],
+                c = this.ship.geometry.faceVertexUvs[i][j][2];
+
+            ctx.beginPath();
+            ctx.moveTo(a.x*500, a.y*500);
+            ctx.lineTo(b.x*500, b.y*500);
+            ctx.lineTo(c.x*500, c.y*500);
+            ctx.lineTo(a.x*500, a.y*500);
+            ctx.stroke();
+        };
+    };
 
 }
 
