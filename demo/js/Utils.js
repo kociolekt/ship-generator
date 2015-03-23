@@ -1,4 +1,6 @@
-var Utils = {};
+var Utils = {
+	center: [0, 0, 0]
+};
 
 /**
  * Speed lerp between values
@@ -64,8 +66,8 @@ Utils.lfsr = (function(){
         rand : function() {
             var bit;
             // From http://en.wikipedia.org/wiki/Linear_feedback_shift_register
-            bit  = ((out >> 0) ^ (out >> 2) ^ (out >> 3) ^ (out >> 5) ) & 1;
-            out =  (out >> 1) | (bit << 15);
+            bit = ((out >> 0) ^ (out >> 2) ^ (out >> 3) ^ (out >> 5) ) & 1;
+            out = (out >> 1) | (bit << 15);
             period++;
             return out / max;
         }
@@ -138,3 +140,64 @@ Utils.angle3 = function(v1, v2, v3) {
 
     return Math.acos(((d12*d12) + (d13*d13) - (d23*d23)) / (2*d12*d13));
 };
+
+/**
+ * Calculates cross product between two vectors
+ * @param  {Array} First vector
+ * @param  {Array} Second vector
+ * @param  {Array} Result array
+ * @return {undefined}
+ */
+Utils.crossProduct = function(v1, v2, result) {
+    result[0] = v1[1] * v2[2] - v2[1] * v1[2];
+    result[1] = v1[2] * v2[0] - v2[2] * v1[0];
+    result[2] = v1[0] * v2[1] - v2[0] * v1[1];
+};
+
+/**
+ * Normalizes vector
+ * @param  {Array} Vector to normalize
+ * @return {undefined}
+ */
+Utils.normalize = function(vector) {
+	var magnitude = Utils.distance3(Utils.center, vector);
+    vector[0] /= magnitude;
+    vector[1] /= magnitude;
+    vector[2] /= magnitude;
+};
+
+/**
+ * Calculates normal to plane containing vectors v1 and v2 
+ * @param  {Array} First vector of a plane
+ * @param  {Array} Second vector of a plane
+ * @param  {Array} Normal to the plane
+ * @return {undefined}
+ */
+Utils.normal = function(v1, v2, normal) {
+	Utils.normalize(Utils.crossProduct(v1, v2, normal));
+};
+
+Utils.bezier = function(controls, divisions, results) {
+
+	var dLen = divisions.length,
+		d, j, i;
+
+	for (d = 0; d < dLen; d++) {
+
+		var t = divisions[d];
+
+	    for (j = controls.length - 1; j > 0; j--) {
+	        for (i = 0; i < j; i++) {
+
+	        	var p1 = controls[i],
+	        		p2 = controls[i+1];
+
+	        	results.push([
+	        		(1-t)*p1[0] + t*p2[0],
+	        		(1-t)*p1[1] + t*p2[1],
+	        		(1-t)*p1[2] + t*p2[2]
+	        	]);
+	        }
+	    }
+	}
+}
