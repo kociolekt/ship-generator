@@ -3,7 +3,7 @@
 /* Creating ship model */
 
 var config = {
-
+    random: ((function(){ Utils.lfsr.setSeed(0); return Utils.lfsr.rand; })())
 };
 
 var generator = new ShipGenerator(config);
@@ -58,8 +58,6 @@ for (var i = 0, fLen = generator.geometry.faces.length; i < fLen; i++) {
 shipGeometry.computeFaceNormals();
 shipGeometry.computeVertexNormals();
 
-console.log(generator.shipHullMaterial.color);
-
 var ship = THREE.SceneUtils.createMultiMaterialObject( shipGeometry, [
     new THREE.MeshLambertMaterial({
         color: generator.shipHullMaterial.color,
@@ -104,7 +102,6 @@ var resize = function () {
 
 var render = function () {
     requestAnimationFrame( render );
-
     renderer.render(scene, camera);
 };
 

@@ -222,10 +222,10 @@ TextureGenerator.prototype.plating = function() {
                 c = this.ship.geometry.faceVertexUvs[i][j][2];
 
             ctx.beginPath();
-            ctx.moveTo(a.x*500, a.y*500);
-            ctx.lineTo(b.x*500, b.y*500);
-            ctx.lineTo(c.x*500, c.y*500);
-            ctx.lineTo(a.x*500, a.y*500);
+            ctx.moveTo(a.x*10+100, a.y*10+100);
+            ctx.lineTo(b.x*10+100, b.y*10+100);
+            ctx.lineTo(c.x*10+100, c.y*10+100);
+            ctx.lineTo(a.x*10+100, a.y*10+100);
             ctx.stroke();
         };
     };

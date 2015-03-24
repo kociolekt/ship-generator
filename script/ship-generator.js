@@ -13,6 +13,7 @@ function ShipGenerator(config) {
     var _this = this;
 
 	this.defaultOptions = {
+        random: Math.random(),
 		className: 'Private Vessel',
 		minLength: 10,
 		maxLength: 24,
@@ -500,18 +501,7 @@ function ShipGenerator(config) {
                 var baseTraverseLineLenght = traverseLines[0].length,
                     wingPointIndex = this.degreeToTraverseIndex(this.wingsType[i]) + offset,
                     wingPointLeftIndex = wingPointIndex === 0 ? (baseTraverseLineLenght - 2) : (wingPointIndex - 1),
-                    wingPointRightIndex = (baseTraverseLineLenght + (wingPointIndex + 1)) % baseTraverseLineLenght,
-                    descriptor = {x: 0, y: -1};
-
-                switch(this.wingsType[i]) {
-                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
-                    case 90: descriptor = {x: 1, y: 0}; break;
-                    case 135: descriptor = {x: 0.70710678118, y: 0.70710678118}; break;
-                    case 180: descriptor = {x: 0, y: 1}; break;
-                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
-                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
-                    case 45: descriptor = {x: 0.70710678118, y: -0.70710678118}; break;
-                }
+                    wingPointRightIndex = (baseTraverseLineLenght + (wingPointIndex + 1)) % baseTraverseLineLenght;
 
                 for (var j = 0, lLen = traverseLines.length; j < lLen; j++) {
 
@@ -668,15 +658,13 @@ function ShipGenerator(config) {
                 if(j > pLen / 2) {
                     f1 = [p4i, p1i, p2i];
                     f2 = [p3i, p4i, p2i];
-                    this.geometry.faces.push(f1);
-                    this.geometry.faces.push(f2);
                 } else {
                     f1 = [p1i, p2i, p3i];
                     f2 = [p1i, p3i, p4i];
-                    this.geometry.faces.push([p1i, p2i, p3i]);
-                    this.geometry.faces.push([p1i, p3i, p4i]);
                 }
 
+                this.geometry.faces.push(f1);
+                this.geometry.faces.push(f2);
                 this.geometry.normals.push(this.computeNormal(f1));
                 this.geometry.normals.push(this.computeNormal(f2));
             }
@@ -711,10 +699,11 @@ function ShipGenerator(config) {
     this.geometry.faceVertexUvs[0] = [];
 
     for (i = 0, fLen = this.geometry.faces.length; i < fLen; i++) {
-        var face = this.geometry.faces[i];
+        var face = this.geometry.faces[i],
+            faceNormal = this.geometry.normals[i];
 
         var components = ['x', 'y', 'z'].sort(function(a, b) {
-            return Math.abs(_this.geometry.normals[i][a]) > Math.abs(_this.geometry.normals[i][b]);
+            return Math.abs(faceNormal[a]) > Math.abs(faceNormal[b]);
         });
 
         var v1 = this.geometry.vertices[face[0]];
@@ -749,7 +738,7 @@ ShipGenerator.prototype.randInt = function(min, max) {
     var vmin = Math.min(min, max),
         vmax = Math.max(min, max);
 
-	return vmin + Math.floor(Math.random() * ((vmax - vmin) + 1));
+	return vmin + Math.floor(this.settings.random() * ((vmax - vmin) + 1));
 };
 
 ShipGenerator.prototype.translate = function(points, v) {
@@ -888,10 +877,12 @@ ShipGenerator.prototype.lerp = function(a, b, t) {
 
 ShipGenerator.prototype.computeNormal = function(face){
 
+    //console.log(face);
+
     //perform cross product of two lines on plane
-    var a = face[0],
-        b = face[1],
-        c = face[2],
+    var a = this.geometry.vertices[face[0]],
+        b = this.geometry.vertices[face[1]],
+        c = this.geometry.vertices[face[2]],
         n = this.crossProduct({
             x: a.x - b.x,
             y: a.y - b.y,
@@ -916,6 +907,6 @@ ShipGenerator.prototype.crossProduct = function(a, b) {
     return {
         x: a.y*b.z - a.z*b.y,
         y: a.z*b.x - a.x*b.z,
-        x: a.x*b.y - a.y*b.x
+        z: a.x*b.y - a.y*b.x
     }
 }
