@@ -10,6 +10,8 @@ Array.prototype.clone = function() {
 
 function ShipGenerator(config) {
 
+    var _this = this;
+
 	this.defaultOptions = {
 		className: 'Private Vessel',
 		minLength: 10,
@@ -712,7 +714,7 @@ function ShipGenerator(config) {
         var face = this.geometry.faces[i];
 
         var components = ['x', 'y', 'z'].sort(function(a, b) {
-            return Math.abs(this.geometry.normals[i][a]) > Math.abs(this.geometry.normals[i][b]);
+            return Math.abs(_this.geometry.normals[i][a]) > Math.abs(_this.geometry.normals[i][b]);
         });
 
         var v1 = this.geometry.vertices[face[0]];
