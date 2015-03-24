@@ -177,27 +177,53 @@ Utils.normal = function(v1, v2, normal) {
 	Utils.normalize(Utils.crossProduct(v1, v2, normal));
 };
 
-Utils.bezier = function(controls, divisions, results) {
+/**
+ * Calculates binomial coefficient
+ * @param  {Float} Parameter N
+ * @param  {Float} Parameter K
+ * @return {Float} Binomial coefficient
+ */
+Utils.binomialCoefficient = function (n, k) {
+    if ( k === 0 ) return 1;
+    if ( k === n ) return 1;
 
-	var dLen = divisions.length,
-		d, j, i;
+    var result = (n + 1 - k) / k--;
+    
+    while (k) {
+        result *= (n + 1 - k) / k--;
+    }
+    
+    return result;
+};
 
-	for (d = 0; d < dLen; d++) {
-
-		var t = divisions[d];
-
-	    for (j = controls.length - 1; j > 0; j--) {
-	        for (i = 0; i < j; i++) {
-
-	        	var p1 = controls[i],
-	        		p2 = controls[i+1];
-
-	        	results.push([
-	        		(1-t)*p1[0] + t*p2[0],
-	        		(1-t)*p1[1] + t*p2[1],
-	        		(1-t)*p1[2] + t*p2[2]
-	        	]);
-	        }
-	    }
+Utils.bezier2 = function(controls, t, vertice) {
+	vertice[0] = 0;
+	vertice[1] = 0;
+	for (var i = 0, n = controls.length-1; i <= n; i++) {
+		vertice[0] += Utils.binomialCoefficient(n, i) * Math.pow(1-t, n-i) * Math.pow(t, i) * controls[i][0];
+		vertice[1] += Utils.binomialCoefficient(n, i) * Math.pow(1-t, n-i) * Math.pow(t, i) * controls[i][1];
 	}
-}
+};
+
+Utils.bezier2N = function(controls, tArray, vertices) {
+	for (var i = 0, tLen = tArray.length; i < tLen; i++) {
+		Utils.bezier2(controls, tArray[i], vertices[i]);
+	}
+};
+
+Utils.bezier3 = function(controls, t, vertice) {
+	vertice[0] = 0;
+	vertice[1] = 0;
+	vertice[2] = 0;
+	for (var i = 0, n = controls.length-1; i <= n; i++) {
+		vertice[0] += Utils.binomialCoefficient(n, i) * Math.pow(1-t, n-i) * Math.pow(t, i) * controls[i][0];
+		vertice[1] += Utils.binomialCoefficient(n, i) * Math.pow(1-t, n-i) * Math.pow(t, i) * controls[i][1];
+		vertice[2] += Utils.binomialCoefficient(n, i) * Math.pow(1-t, n-i) * Math.pow(t, i) * controls[i][2];
+	}
+};
+
+Utils.bezier3N = function(controls, tArray, vertices) {
+	for (var i = 0, tLen = tArray.length; i < tLen; i++) {
+		Utils.bezier3(controls, tArray[i], vertices[i]);
+	}
+};
