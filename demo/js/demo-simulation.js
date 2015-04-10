@@ -136,7 +136,7 @@ var timestamp = window.performance && window.performance.now ? function(){return
 
 document.addEventListener('keydown',    onkeydown,    false);
 document.addEventListener('keyup',      onkeyup,      false);
-function onkeydown(event) { INPUT[event.keyCode] = true; console.log(event.keyCode) }
+function onkeydown(event) { INPUT[event.keyCode] = true; }
 function onkeyup(event) { INPUT[event.keyCode] = false; }
 
 
@@ -145,15 +145,51 @@ function onkeyup(event) { INPUT[event.keyCode] = false; }
 var thrust       = 0,
     minThrust    = -10,
     maxThrust    = 10,
-    thrustPerSec = maxThrust/3,
+    thrustPerSec = maxThrust,
     speed        = 0,
     minSpeed     = -100,
-    maxSpeed     = 100;
+    maxSpeed     = 100,
+    breaks       = thrustPerSec;
 
 function update(step) {
     if(INPUT[KEY.SHIFT]) {
-        console.log(step);
+        thrust += thrustPerSec * step;
+
+        if (thrust > maxThrust) {
+            thrust = maxThrust;
+        }
     }
+
+    if(INPUT[KEY.CTRL]) {
+        thrust -= thrustPerSec * step;
+
+        if (thrust < minThrust) {
+            thrust = minThrust;
+        }
+    }
+
+    speed += thrust * step;
+
+    if(!INPUT[KEY.SHIFT] && !INPUT[KEY.CTRL] && INPUT[KEY.C]) {
+
+        thrust = 0;
+
+        if (speed !== 0) {
+            speed -= (Math.sign(speed) * breaks * step);
+
+            if(Math.abs(speed) < 0.1) {
+                speed = 0;
+            }
+        }
+    }
+
+    if (speed > maxSpeed) {
+        speed = maxSpeed;
+    } else if (speed < minSpeed) {
+        speed = minSpeed;
+    }
+
+    ship.position.z += speed;
 }
 
 function render(step) {
