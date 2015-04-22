@@ -200,7 +200,7 @@ function Ship() {
     this.force = [0, 0, 0]; //[N]
     this.position = [0, 0, 0]; //[m]
     this.shipDirection = new THREE.Vector3( 0, 0, 1 );
-    this.forceDirection = [0, 0, 0]; //[m];
+    this.tmpDirection = [0, 0, 0]; //[m];
     this.init();
 }
 
@@ -246,6 +246,11 @@ Ship.prototype.update = function(dt, simulation) {
         this.force[2] += this.shipDirection.z * 10;
     }
 
+    /* SAS System */
+    if (simulation.TOGGLED[simulation.KEY.C]) { //Breaks power of 10
+        
+    }
+
     /* Calculate new position */
     var accelerationXTmp = this.acceleration[0],
         accelerationYTmp = this.acceleration[1],
@@ -257,26 +262,6 @@ Ship.prototype.update = function(dt, simulation) {
     this.position[0] += positionXTmp;
     this.position[1] += positionYTmp;
     this.position[2] += positionZTmp;
-
-    /* SAS System */
-    if (simulation.TOGGLED[simulation.KEY.C]) { //Breaks power of 10
-        if (positionXTmp + positionYTmp + positionZTmp !== 0) {
-            this.forceDirection[0] = positionXTmp;
-            this.forceDirection[1] = positionYTmp;
-            this.forceDirection[2] = positionZTmp;
-            var forceTmp = Utils.distance(Utils.center, this.forceDirection);
-
-            if(forceTmp > 10) {
-                this.forceDirection[0] = this.forceDirection[0] / forceTmp * 10;
-                this.forceDirection[1] = this.forceDirection[1] / forceTmp * 10;
-                this.forceDirection[2] = this.forceDirection[2] / forceTmp * 10;
-            }
-
-            this.force[0] -= this.forceDirection[0];
-            this.force[1] -= this.forceDirection[1];
-            this.force[2] -= this.forceDirection[2];
-        }
-    }
 
     /* Calculate new acceleration and velocity from forces */
     this.acceleration[0] = this.force[0] / this.mass;
