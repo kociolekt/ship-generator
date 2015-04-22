@@ -101,7 +101,7 @@ Simulation.prototype.initInput = function() {
 
     this.INPUT = new Array(255);
     this.TOGGLED = new Array(255);
-    
+
     for (var i = 0; i < 255; i += 1) {
         this.INPUT[i] = false;
     }
@@ -200,7 +200,7 @@ function Ship() {
     this.force = [0, 0, 0]; //[N]
     this.position = [0, 0, 0]; //[m]
     this.shipDirection = new THREE.Vector3( 0, 0, 1 );
-    this.moveDirection = [0, 0, 0]; //[m];
+    this.forceDirection = [0, 0, 0]; //[m];
     this.init();
 }
 
@@ -244,7 +244,7 @@ Ship.prototype.update = function(dt, simulation) {
         this.force[0] += this.shipDirection.x * 10;
         this.force[1] += this.shipDirection.y * 10;
         this.force[2] += this.shipDirection.z * 10;
-    } 
+    }
 
     /* Calculate new position */
     var accelerationXTmp = this.acceleration[0],
@@ -259,23 +259,24 @@ Ship.prototype.update = function(dt, simulation) {
     this.position[2] += positionZTmp;
 
     /* SAS System */
-    this.moveDirection[0] = positionXTmp;
-    this.moveDirection[1] = positionYTmp;
-    this.moveDirection[2] = positionZTmp;
-    var distance = Utils.distance(Utils.center, this.moveDirection);
-    if (distance !== 0) {
-        this.moveDirection[0] /= distance;
-        this.moveDirection[1] /= distance;
-        this.moveDirection[2] /= distance;
-    }
-
     if (simulation.TOGGLED[simulation.KEY.C]) { //Breaks power of 10
-        console.log(this.moveDirection);
-        this.force[0] -= 0;
-        this.force[1] -= Math.abs(this.force[1]) < 10 ? this.force[1] : this.moveDirection[1] * 10;
-        this.force[2] -= Math.abs(this.force[2]) < 10 ? this.force[2] : this.moveDirection[2] * 10;
-    } 
+        if (positionXTmp + positionYTmp + positionZTmp !== 0) {
+            this.forceDirection[0] = positionXTmp;
+            this.forceDirection[1] = positionYTmp;
+            this.forceDirection[2] = positionZTmp;
+            var forceTmp = Utils.distance(Utils.center, this.forceDirection);
 
+            if(forceTmp > 10) {
+                this.forceDirection[0] = this.forceDirection[0] / forceTmp * 10;
+                this.forceDirection[1] = this.forceDirection[1] / forceTmp * 10;
+                this.forceDirection[2] = this.forceDirection[2] / forceTmp * 10;
+            }
+
+            this.force[0] -= this.forceDirection[0];
+            this.force[1] -= this.forceDirection[1];
+            this.force[2] -= this.forceDirection[2];
+        }
+    }
 
     /* Calculate new acceleration and velocity from forces */
     this.acceleration[0] = this.force[0] / this.mass;
