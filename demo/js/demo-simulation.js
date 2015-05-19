@@ -30,11 +30,12 @@ Simulation.prototype.initScene = function() {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize( window.innerWidth, window.innerHeight );
+    this.renderer.setClearColor( 0x000000, 0 );
     document.body.appendChild( this.renderer.domElement );
 
     //Camera Controlls Temporary
-    this.controls = new THREE.OrbitControls( this.camera );
-    this.controls.damping = 0.2;
+    //this.controls = new THREE.OrbitControls( this.camera );
+    //this.controls.damping = 0.2;
 
     //Lights
     this.lights = [];
@@ -194,13 +195,34 @@ Simulation.prototype.run = function() {
 
 
 function Ship() {
+    /* Ship properties */
     this.mass = 1; //[kg]
+    this.width = 1;
+    this.height = 1;
+    this.length = 1;
+    this.shipDirection = new THREE.Vector3( 0, 0, 1 ); //Direction in which ship is pointing
+    this.moveDirection = [0, 0, 0]; //Direction in which ship is moving
+    this.rotationDirection = [0, 0, 0]; //Direction in which ship is moving
+
+    /* Translation Physics helpers */
     this.acceleration = [0, 0, 0]; //[m/s^2]
     this.velocity = [0, 0, 0]; //[m/s]
     this.force = [0, 0, 0]; //[N]
     this.position = [0, 0, 0]; //[m]
-    this.shipDirection = new THREE.Vector3( 0, 0, 1 );
-    this.tmpDirection = [0, 0, 0]; //[m];
+    this.deltaDistance = [0, 0, 0]; //[m] The distance at time deltaTime;
+    this.deltaTime = 0; //[s] last timeslice
+
+    /* Rotation Physics helpers */
+    this.rotationAcceleration = [0, 0, 0]; //[m/s^2]
+    this.rotationVelocity = [0, 0, 0]; //[m/s]
+    this.rotationForce = [0, 0, 0]; //[N]
+    this.rotationTmp = new THREE.Quaternion(); //[m]
+    this.rotationDeltaAngle = [0, 0, 0]; //[m] The distance at time deltaTime;
+
+    /* Camera helpers */
+    this.cameraDirection = new THREE.Vector3( 0, 0, 1 );
+    this.cameraPosition = new THREE.Vector3( 0, 0, 1 );
+
     this.init();
 }
 
@@ -210,6 +232,17 @@ Ship.prototype.init = function() {
     };
 
     var generator = new ShipGenerator(config);
+
+    this.width  = generator.shipWidth;
+    this.height = generator.shipHeight;
+    this.length = generator.shipLength;
+    this.momentOfInertia = [
+        ((this.mass / 2) * ((this.height * this.height) + (this.length * this.length))) / 12,
+        ((this.mass / 2) * ((this.width * this.width) + (this.length * this.length))) / 12,
+        ((this.mass / 2) * ((this.height * this.height) + (this.width * this.width))) / 12
+    ];
+
+    console.log(this.momentOfInertia);
 
     /* transform ship model to three.js model */
     var shipGeometry = new THREE.Geometry();
@@ -230,53 +263,194 @@ Ship.prototype.init = function() {
             shading: generator.settings.bodyType === 'fluidStyle' ? THREE.SmoothShading : THREE.FlatShading
         } )
     ]);
+
+    this.sceneObject.rotation.order = 'YXZ';
 };
 
 Ship.prototype.update = function(dt, simulation) {
-    /* rotate ship */
-    this.shipDirection.x = 0;
-    this.shipDirection.y = 0;
-    this.shipDirection.z = 1;
-    this.shipDirection.applyQuaternion(this.sceneObject.quaternion);
+    this.deltaTime = dt;
 
-    /* Add up all forces influencing the object */
-    if (simulation.TOGGLED[simulation.KEY.SHIFT]) { //Thrust power of 10
-        this.force[0] += this.shipDirection.x * 10;
-        this.force[1] += this.shipDirection.y * 10;
-        this.force[2] += this.shipDirection.z * 10;
-    }
+    /* START Calculate new position *****************************************************/
+    var accelerationXTmp = this.acceleration[0],                                        //
+        accelerationYTmp = this.acceleration[1],                                        //
+        accelerationZTmp = this.acceleration[2];                                        //
+                                                                                        //
+    this.deltaDistance[0] = dt * (this.velocity[0] + dt * accelerationXTmp / 2);        //         
+    this.deltaDistance[1] = dt * (this.velocity[1] + dt * accelerationYTmp / 2);        //
+    this.deltaDistance[2] = dt * (this.velocity[2] + dt * accelerationZTmp / 2);        //
+                                                                                        //
+    this.position[0] += this.deltaDistance[0];                                          //
+    this.position[1] += this.deltaDistance[1];                                          //
+    this.position[2] += this.deltaDistance[2];                                          //
+    /* END Calculate new position *******************************************************/
 
-    /* SAS System */
-    if (simulation.TOGGLED[simulation.KEY.C]) { //Breaks power of 10
-        
-    }
+    /* START Calculate new rotation *****************************************************/
+    var rotationAccelerationXTmp = this.rotationAcceleration[0],                        //
+        rotationAccelerationYTmp = this.rotationAcceleration[1],                        //
+        rotationAccelerationZTmp = this.rotationAcceleration[2];                        //
+                                                                                        //
+    this.rotationDeltaAngle[0] = dt * (this.rotationVelocity[0] + dt * rotationAccelerationXTmp / 2);        //         
+    this.rotationDeltaAngle[1] = dt * (this.rotationVelocity[1] + dt * rotationAccelerationYTmp / 2);        //
+    this.rotationDeltaAngle[2] = dt * (this.rotationVelocity[2] + dt * rotationAccelerationZTmp / 2);        //
 
-    /* Calculate new position */
-    var accelerationXTmp = this.acceleration[0],
-        accelerationYTmp = this.acceleration[1],
-        accelerationZTmp = this.acceleration[2],
-        positionXTmp = dt * (this.velocity[0] + dt * accelerationXTmp / 2),
-        positionYTmp = dt * (this.velocity[1] + dt * accelerationYTmp / 2),
-        positionZTmp = dt * (this.velocity[2] + dt * accelerationZTmp / 2);
+    this.rotationTmp.set( this.rotationDeltaAngle[0], this.rotationDeltaAngle[1], this.rotationDeltaAngle[2], 1 ).normalize();                                                          //
+    /* END Calculate new rotation *******************************************************/
 
-    this.position[0] += positionXTmp;
-    this.position[1] += positionYTmp;
-    this.position[2] += positionZTmp;
+    /* Update Camera */
+    this.updateCamera();
 
-    /* Calculate new acceleration and velocity from forces */
-    this.acceleration[0] = this.force[0] / this.mass;
-    this.acceleration[1] = this.force[1] / this.mass;
-    this.acceleration[2] = this.force[2] / this.mass;
+    /* Update Ship Properties */
+    this.updateShipProperties(dt);
 
-    this.velocity[0] += dt * (accelerationXTmp + this.acceleration[0]) / 2;
-    this.velocity[1] += dt * (accelerationYTmp + this.acceleration[1]) / 2;
-    this.velocity[2] += dt * (accelerationZTmp + this.acceleration[2]) / 2;
+    /* Applying current forces */
+    this.resetForces();
+    this.applySteeringForces(dt, simulation)
+    this.applyThrustForces(dt, simulation); //Apply steering forces
+    this.applyWorldForces(dt, simulation); //Apply world forces
+
+    /* START Calculate new acceleration and velocity from forces ************************/
+    this.acceleration[0] = this.force[0] / this.mass;                                   //
+    this.acceleration[1] = this.force[1] / this.mass;                                   //
+    this.acceleration[2] = this.force[2] / this.mass;                                   //
+                                                                                        //
+    this.velocity[0] += dt * (accelerationXTmp + this.acceleration[0]) / 2;             //
+    this.velocity[1] += dt * (accelerationYTmp + this.acceleration[1]) / 2;             //
+    this.velocity[2] += dt * (accelerationZTmp + this.acceleration[2]) / 2;             //
+    /* END Calculate new acceleration and velocity from forces **************************/
+
+    /* START Calculate new rotation acceleration and velocity from forces ************************/
+    this.rotationAcceleration[0] = this.rotationForce[0] / this.momentOfInertia[0];                                   //
+    this.rotationAcceleration[1] = this.rotationForce[1] / this.momentOfInertia[1];                                   //
+    this.rotationAcceleration[2] = this.rotationForce[2] / this.momentOfInertia[2];                                   //
+                                                                                        //
+    this.rotationVelocity[0] += dt * (rotationAccelerationXTmp + this.rotationAcceleration[0]) / 2;             //
+    this.rotationVelocity[1] += dt * (rotationAccelerationYTmp + this.rotationAcceleration[1]) / 2;             //
+    this.rotationVelocity[2] += dt * (rotationAccelerationZTmp + this.rotationAcceleration[2]) / 2;             //
+    /* END Calculate new rotation acceleration and velocity from forces **************************/
 };
 
 Ship.prototype.postUpdate = function() {
     this.sceneObject.position.x = this.position[0];
     this.sceneObject.position.y = this.position[1];
     this.sceneObject.position.z = this.position[2];
+
+    this.sceneObject.quaternion.multiply( this.rotationTmp );
+    // expose the rotation vector for convenience
+    this.sceneObject.rotation.setFromQuaternion( this.sceneObject.quaternion, this.sceneObject.rotation.order );
+};
+
+Ship.prototype.updateCamera = function() {
+    this.simulation.camera.lookAt(this.sceneObject.position);
+    if (this.simulation.camera.position.distanceTo(this.sceneObject.position) > 50) {
+        this.simulation.camera.position.subVectors(this.sceneObject.position, this.simulation.camera.position);
+        this.simulation.camera.position.setLength( -50 );
+        this.simulation.camera.position.add(this.sceneObject.position);
+    }
+};
+
+Ship.prototype.updateShipProperties = function() {
+    this.shipDirection.x = 0;
+    this.shipDirection.y = 0;
+    this.shipDirection.z = 1;
+    this.shipDirection.applyQuaternion(this.sceneObject.quaternion);
+
+    this.moveDirection[0] = this.deltaDistance[0];
+    this.moveDirection[1] = this.deltaDistance[1];
+    this.moveDirection[2] = this.deltaDistance[2];
+    Utils.normalize(this.moveDirection);
+
+    this.rotationDirection[0] = this.rotationDeltaAngle[0];
+    this.rotationDirection[1] = this.rotationDeltaAngle[1];
+    this.rotationDirection[2] = this.rotationDeltaAngle[2];
+    Utils.normalize(this.rotationDirection);
+};
+
+Ship.prototype.resetForces = function() {
+    this.force[0] = 0;
+    this.force[1] = 0;
+    this.force[2] = 0;
+    this.rotationForce[0] = 0;
+    this.rotationForce[1] = 0;
+    this.rotationForce[2] = 0;
+};
+
+Ship.prototype.applySteeringForces = function(dt, simulation) {
+
+    var thrustPower = 10;
+
+    /* rotate ship */
+    if (simulation.TOGGLED[simulation.KEY.C]) { //SAS ON
+
+        var stopForce = -10,
+            minStopAngle = Utils.magnitude3(this.rotationDeltaAngle);
+
+        if(minStopAngle > 0) { //Ship is in move and breaking is needed
+            var currentVelocity = minStopAngle / this.deltaTime,
+                requiredAcceleration = -((currentVelocity * currentVelocity) / (2 * minStopAngle)),
+                requiredForce = this.mass * requiredAcceleration;
+
+            this.rotationForce[0] += this.rotationDirection[0] * Math.max(this.momentOfInertia[0] * requiredAcceleration, stopForce);
+            this.rotationForce[1] += this.rotationDirection[1] * Math.max(this.momentOfInertia[1] * requiredAcceleration, stopForce);
+            this.rotationForce[2] += this.rotationDirection[2] * Math.max(this.momentOfInertia[2] * requiredAcceleration, stopForce);
+        }
+    } else { //SAS OFF
+        if(simulation.INPUT[simulation.KEY.LEFT]) {
+            this.rotationForce[1] = thrustPower;
+        }
+
+        if(simulation.INPUT[simulation.KEY.RIGHT]) {
+            this.rotationForce[1] = -thrustPower;
+        }
+
+        if(simulation.INPUT[simulation.KEY.UP]) {
+            this.rotationForce[0] = thrustPower;
+        }
+
+        if(simulation.INPUT[simulation.KEY.DOWN]) {
+            this.rotationForce[0] = -thrustPower;
+        }
+    }
+};
+
+Ship.prototype.applyThrustForces = function(dt, simulation) {
+
+    var thrustPower = 10;
+
+    /* SAS System */
+    if (simulation.TOGGLED[simulation.KEY.C]) { //SAS ON
+
+        var stopForce = -10,
+            minStopDistance = Utils.magnitude3(this.deltaDistance);
+
+        if(minStopDistance > 0) { //Ship is in move and breaking is needed
+            var currentVelocity = minStopDistance / this.deltaTime,
+                requiredAcceleration = -((currentVelocity * currentVelocity) / (2 * minStopDistance)),
+                requiredForce = this.mass * requiredAcceleration;
+
+            stopForce = Math.max(requiredForce, stopForce);
+
+            this.force[0] += this.moveDirection[0] * stopForce;
+            this.force[1] += this.moveDirection[1] * stopForce;
+            this.force[2] += this.moveDirection[2] * stopForce;
+        }
+
+    } else { //SAS OFF
+        if (simulation.TOGGLED[simulation.KEY.SHIFT]) {
+            this.force[0] += this.shipDirection.x * thrustPower;
+            this.force[1] += this.shipDirection.y * thrustPower;
+            this.force[2] += this.shipDirection.z * thrustPower;
+        }
+
+        if (simulation.TOGGLED[simulation.KEY.CTRL]) {
+            this.force[0] -= this.shipDirection.x * thrustPower;
+            this.force[1] -= this.shipDirection.y * thrustPower;
+            this.force[2] -= this.shipDirection.z * thrustPower;
+        }
+    }
+};
+
+Ship.prototype.applyWorldForces = function(dt, simulation) {
+
 };
 
 function init() {

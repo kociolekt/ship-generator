@@ -110,6 +110,38 @@ Utils.distance3	 = function(p, q) {
 };
 
 /**
+ * Calculates length of vector p
+ * @param  {Array} Vector p
+ * @return {Float} Distance
+ */
+Utils.magnitude = function(p) {
+	return p - Utils.center[0];
+};
+
+/**
+ * Calculates length of vector p
+ * @param  {Array} Vector p
+ * @return {Float} Distance
+ */
+Utils.magnitude2 = function(p) {
+	var d1 = p[0] - Utils.center[0],
+	    d2 = p[1] - Utils.center[1];
+	return Math.sqrt(d1 * d1 + d2 * d2);
+};
+
+/**
+ * Calculates length of vector p
+ * @param  {Array} Vector p
+ * @return {Float} Distance
+ */
+Utils.magnitude3	 = function(p) {
+	var d1 = p[0] - Utils.center[0],
+	    d2 = p[1] - Utils.center[1],
+	    d3 = p[2] - Utils.center[2];
+	return Math.sqrt(d1 * d1 + d2 * d2 + d3 * d3);
+};
+
+/**
  * Calculates angle between three points on a plane where p1 is vertex of athe angle
  * @param  {Array} First point
  * @param  {Array} Vertex of the angle
@@ -160,7 +192,7 @@ Utils.crossProduct = function(v1, v2, result) {
  * @return {undefined}
  */
 Utils.normalize = function(vector) {
-	var magnitude = Utils.distance3(Utils.center, vector);
+	var magnitude = Utils.magnitude3(vector);
     vector[0] /= magnitude;
     vector[1] /= magnitude;
     vector[2] /= magnitude;
