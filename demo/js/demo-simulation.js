@@ -25,7 +25,7 @@ Simulation.prototype.initScene = function() {
 
     //Camera
     this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000000000000 );
-    this.camera.position.set(23.21715753525241, 11.01955380195478, 13.709757118304086);
+    this.camera.position.set(0, 50, 100);
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -34,9 +34,9 @@ Simulation.prototype.initScene = function() {
     document.body.appendChild( this.renderer.domElement );
 
     //Camera Controlls Temporary
-    this.controls = new THREE.OrbitControls( this.camera );
-    this.controls.damping = 0.2;
-    this.controls.noKeys = true;
+    //this.controls = new THREE.OrbitControls( this.camera );
+    //this.controls.damping = 0.2;
+    //this.controls.noKeys = true;
 
     //Lights
     this.lights = [];
@@ -242,9 +242,11 @@ function Ship() {
     this.rotationDeltaAngle = [0, 0, 0]; //[m] The distance at time deltaTime;
 
     /* Camera position helpers */
-    this.nextCameraPosition = new THREE.Vector3( 0, 0, 0 );
+    this.targetCameraPosition = new THREE.Vector3( 0, 0, 0 );
+    this.targetCameraScale = new THREE.Vector3( 0, 0, 0 );
+    this.targetCameraRotation = new THREE.Quaternion();
+    this.cameraTargetMatrix = new THREE.Matrix4();
 
-    this.init();
 }
 
 Ship.prototype.init = function() {
@@ -262,8 +264,6 @@ Ship.prototype.init = function() {
         ((this.mass / 2) * ((this.width * this.width) + (this.length * this.length))) / 12,
         ((this.mass / 2) * ((this.height * this.height) + (this.width * this.width))) / 12
     ];
-
-    console.log(this.momentOfInertia);
 
     /* transform ship model to three.js model */
     var shipGeometry = new THREE.Geometry();
@@ -286,6 +286,12 @@ Ship.prototype.init = function() {
     ]);
 
     this.sceneObject.rotation.order = 'YXZ';
+    this.simulation.scene.add(this.sceneObject);
+
+    this.cameraTarget = new THREE.Object3D();
+    this.cameraTarget.position.set(0, (this.height / 2), -this.length);
+    this.cameraTarget.lookAt(this.cameraTarget.position, this.sceneObject.position, new THREE.Vector3(0, 1, 0));
+    this.sceneObject.add( this.cameraTarget );
 };
 
 Ship.prototype.update = function(dt, simulation) {
@@ -361,13 +367,60 @@ Ship.prototype.postUpdate = function() {
 };
 
 Ship.prototype.updateCamera = function() {
-    var smooth = 0.2;
+    var smooth = 0.8;
+
+    this.cameraTargetMatrix.getInverse( this.cameraTarget.matrixWorld );
+
+    if(simulation.TOGGLED[simulation.KEY.O]) {
+        this.cameraTarget.updateMatrix();
+
+
+
+        this.cameraTargetMatrix.decompose(this.targetCameraPosition, this.targetCameraRotation, this.targetCameraScale);
+
+        console.log(this.targetCameraRotation)
+
+        this.simulation.camera.position.lerp( this.targetCameraPosition, smooth );
+        this.simulation.camera.quaternion.copy(this.targetCameraRotation);
+
+        //console.log(this.simulation.camera.quaternion)
+    }
+
+
+/*
+    this.cameraRotation.setFromUnitVectors( this.simulation.camera.position, this.sceneObject.position );
+
+    this.shipDirection.x = 0;
+    this.shipDirection.y = 0;
+    this.shipDirection.z = 1;
+    this.shipDirection.applyQuaternion(this.sceneObject.quaternion);
+*/
+    //this.simulation.camera.quaternion.setFromUnitVectors( this.simulation.camera.position, this.sceneObject.position );
+
+    //console.log(this.simulation.camera.rotation)
+
+    //this.simulation.camera.rotation.normalize();
+
+    //this.simulation.camera.rotation.order = this.sceneObject.rotation.order;
+    //this.simulation.camera.lookAt(this.sceneObject.position);
+
+    //this.simulation.camera.rotation.x = this.shipDirection.x;
+    //this.simulation.camera.rotation.y = this.shipDirection.y;
+    //this.simulation.camera.rotation.z = this.shipDirection.z;
+
+    //this.simulation.camera.position.x = 0;
+    //this.simulation.camera.position.y = 0;
+    //this.simulation.camera.position.z = 0;
+
+    //this.cameraRotation.copy(this.sceneObject.quaternion);
+    //this.simulation.camera.rotation.setFromQuaternion(this.cameraRotation, this.sceneObject.rotation.order );
+    /*
+    this.simulation.camera.up.set( 0,0,0);
+    this.simulation.camera.lookAt(this.sceneObject.position);
 
     this.simulation.camera.position.x = (this.simulation.camera.position.x * (1 - smooth)) + ((this.sceneObject.position.x - (this.shipDirection.x * this.length )) * smooth);
     this.simulation.camera.position.y = (this.simulation.camera.position.y * (1 - smooth)) + ((this.sceneObject.position.y - (this.shipDirection.y * this.length ) + (this.height / 2)) * smooth);
-    this.simulation.camera.position.z = (this.simulation.camera.position.z * (1 - smooth)) + ((this.sceneObject.position.z - (this.shipDirection.z * this.length )) * smooth);
-
-    this.simulation.camera.lookAt(this.sceneObject.position);
+    this.simulation.camera.position.z = (this.simulation.camera.position.z * (1 - smooth)) + ((this.sceneObject.position.z - (this.shipDirection.z * this.length )) * smooth);*/
 };
 
 Ship.prototype.updateShipProperties = function() {
@@ -487,7 +540,12 @@ Ship.prototype.applyWorldForces = function(dt, simulation) {
 function init() {
     window.simulation = new Simulation();
 
-    simulation.createSimulationObject(new Ship());
+    /* init ship */
+    window.ship = simulation.createSimulationObject(new Ship());
+    ship.init();
+
+
+
     simulation.run();
 }
 
